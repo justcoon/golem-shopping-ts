@@ -37,42 +37,49 @@ export const mergePricingItems = (first: PricingItem[], second: PricingItem[]): 
 
 @agent()
 export class PricingAgent extends BaseAgent {
-    private value: Pricing = {
-        productId: "",
-        msrpPrices: [],
-        listPrices: []
-    };
+    private readonly productId: string;
+    private value: Pricing | undefined = undefined;
 
     constructor(id: string) {
         super()
-        this.value.productId = id;
+        this.productId = id;
     }
 
     @prompt("Initialize pricing")
-    async initialize(msrpPrices: PricingItem[], listPrices: PricingItem[]) {
-        this.value.msrpPrices = msrpPrices;
-        this.value.listPrices = listPrices;
+    async initializePricing(msrpPrices: PricingItem[], listPrices: PricingItem[]) {
+        this.value = {
+            productId: this.productId,
+            msrpPrices: msrpPrices,
+            listPrices: listPrices
+        }
     }
 
     @prompt("Update pricing")
-    async update(msrpPrices: PricingItem[], listPrices: PricingItem[]) {
-        this.value.msrpPrices = mergePricingItems(this.value.msrpPrices, msrpPrices);
-        this.value.listPrices = mergePricingItems(this.value.listPrices, listPrices);
+    async updatePricing(msrpPrices: PricingItem[], listPrices: PricingItem[]) {
+        if (this.value) {
+            this.value.msrpPrices = mergePricingItems(this.value.msrpPrices, msrpPrices);
+            this.value.listPrices = mergePricingItems(this.value.listPrices, listPrices);
+        }
     }
 
     @prompt("Get price by currency and zone")
     async getPrice(currency: string, zone: string): Promise<PricingItem | undefined> {
-        let maybePrice = this.value.listPrices.find((p) => p.currency === currency && p.zone === zone);
 
-        if (maybePrice) {
-            return maybePrice;
+        if (this.value) {
+            let maybePrice = this.value.listPrices.find((p) => p.currency === currency && p.zone === zone);
+
+            if (maybePrice) {
+                return maybePrice;
+            } else {
+                return this.value.msrpPrices.find((p) => p.currency === currency && p.zone === zone);
+            }
         } else {
-            return this.value.msrpPrices.find((p) => p.currency === currency && p.zone === zone);
+            return undefined;
         }
     }
 
     @prompt("Get pricing")
-    async get(): Promise<Pricing> {
+    async get(): Promise<Pricing | undefined> {
         return this.value;
     }
 }

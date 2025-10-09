@@ -33,24 +33,16 @@ export interface OrderConfirmation {
 
 @agent()
 export class CartAgent extends BaseAgent {
-    private value: Cart = {
-        userId: "",
-        items: [],
-        email: undefined,
-        billingAddress: undefined,
-        shippingAddress: undefined,
-        total: 0,
-        currency: CURRENCY,
-        previousOrderIds: []
-    };
+    private readonly userId: string;
+    private value: Cart | undefined = undefined;
 
     constructor(id: string) {
         super()
-        this.value.userId = id;
+        this.userId = id;
     }
 
     @prompt("Get cart")
-    async get(): Promise<Cart> {
+    async get(): Promise<Cart | undefined> {
         return this.value;
     }
 }

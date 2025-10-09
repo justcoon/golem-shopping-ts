@@ -15,29 +15,27 @@ export interface Product {
 
 @agent()
 export class ProductAgent extends BaseAgent {
-    private value: Product = {
-        productId: "",
-        name: "",
-        brand: "",
-        description: "",
-        tags: []
-    };
+    private readonly productId: string;
+    private value: Product | undefined = undefined;
 
     constructor(id: string) {
         super()
-        this.value.productId = id;
+        this.productId = id;
     }
 
     @prompt("Initialize product")
-    async initialize(name: string, brand: string, description: string, tags: string[]) {
-        this.value.name = name;
-        this.value.brand = brand;
-        this.value.description = description;
-        this.value.tags = tags;
+    async initializeProduct(name: string, brand: string, description: string, tags: string[]) {
+        this.value =  {
+            productId: this.productId,
+            name: name,
+            brand: brand,
+            description: description,
+            tags: tags
+        };
     }
 
     @prompt("Get product")
-    async get(): Promise<Product> {
+    async get(): Promise<Product | undefined> {
         return this.value;
     }
 }

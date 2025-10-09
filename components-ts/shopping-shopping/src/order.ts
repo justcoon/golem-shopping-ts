@@ -15,7 +15,7 @@ export interface OrderItem {
 }
 
 export interface Order {
-    orderId: String,
+    orderId: string,
     userId: string;
     status: OrderStatus;
     items: OrderItem[];
@@ -28,9 +28,9 @@ export interface Order {
 }
 
 export enum OrderStatus {
-    new,
-    shipped,
-    cancelled,
+    new = "new",
+    shipped = "shipped",
+    cancelled = "cancelled",
 }
 
 export interface CreateOrder {
@@ -46,36 +46,31 @@ export interface CreateOrder {
 
 @agent()
 export class OrderAgent extends BaseAgent {
-    private value: Order = {
-        orderId: "",
-        userId: "",
-        status: OrderStatus.new,
-        items: [],
-        email: undefined,
-        billingAddress: undefined,
-        shippingAddress: undefined,
-        total: 0,
-        currency: CURRENCY
-    };
+    private readonly orderId: string;
+    private value: Order | undefined = undefined;
 
     constructor(id: string) {
         super()
-        this.value.orderId = id;
+        this.orderId = id;
     }
 
     @prompt("Create order")
     async create(order: CreateOrder) {
-        this.value.userId = order.userId;
-        this.value.items = order.items;
-        this.value.email = order.email;
-        this.value.billingAddress = order.billingAddress;
-        this.value.shippingAddress = order.shippingAddress;
-        this.value.total = order.total;
-        this.value.currency = order.currency;
+        this.value = {
+            orderId: this.orderId,
+            userId: order.userId,
+            status: OrderStatus.new,
+            items: [],
+            email: order.email,
+            billingAddress: order.billingAddress,
+            shippingAddress: order.shippingAddress,
+            total: order.total,
+            currency: order.currency,
+        };
     }
 
     @prompt("Get order")
-    async get(): Promise<Order> {
+    async get(): Promise<Order | undefined> {
         return this.value;
     }
 }

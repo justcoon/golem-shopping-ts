@@ -1,5 +1,5 @@
-import {PricingItem}    from "./pricing";
-import {Product}        from "./product";
-import {Order}          from "./order";
-import {Cart}           from "./cart";
+export {PricingAgent} from "./pricing";
+export {ProductAgent} from "./product";
+export {OrderAgent} from "./order";
+export {CartAgent} from "./cart";
 
