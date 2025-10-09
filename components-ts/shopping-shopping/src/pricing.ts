@@ -64,7 +64,6 @@ export class PricingAgent extends BaseAgent {
 
     @prompt("Get price by currency and zone")
     async getPrice(currency: string, zone: string): Promise<PricingItem | undefined> {
-
         if (this.value) {
             let maybePrice = this.value.listPrices.find((p) => p.currency === currency && p.zone === zone);
 
