@@ -25,7 +25,7 @@ export class ProductAgent extends BaseAgent {
 
     @prompt("Initialize product")
     async initializeProduct(name: string, brand: string, description: string, tags: string[]) {
-        this.value =  {
+        this.value = {
             productId: this.productId,
             name: name,
             brand: brand,
