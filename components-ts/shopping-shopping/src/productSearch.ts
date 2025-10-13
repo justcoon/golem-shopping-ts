@@ -8,6 +8,7 @@ import {
 } from '@golemcloud/golem-ts-sdk';
 import {Product, ProductAgent} from "./product";
 import {Result} from "./common";
+import {parseAgentId} from "golem:agent/host";
 
 const AGENT_FILTER: AgentAnyFilter = {
     filters: [{
@@ -23,9 +24,20 @@ const AGENT_FILTER: AgentAnyFilter = {
     }]
 }
 
-export function getProductAgentId(agentName: string): string | undefined {
+function getProductAgentId(agentName: string): string | undefined {
+    // parseAgentId(agentName)
     const match = agentName.match(/^product-agent\("([^"]+)"\)$/);
     return match ? match[1] : undefined;
+}
+
+function arrayChunks<T>(array: T[], chunkSize: number): T[][] {
+    const chunks: T[][] = [];
+
+    for (let i = 0; i < array.length; i += chunkSize) {
+        chunks.push(array.slice(i, i + chunkSize));
+    }
+
+    return chunks;
 }
 
 export class ProductQueryMatcher {
@@ -150,34 +162,46 @@ export class ProductSearchAgent extends BaseAgent {
         if (componentId) {
             const matcher = new ProductQueryMatcher(query);
 
-            let products: Product[] = [];
+            const products: Product[] = [];
+
+            const processedIds = new Set<string>();
 
             const getter = new GetAgents(componentId, AGENT_FILTER, true);
             let values = await getter.getNext();
 
             while (values && values.length > 0) {
 
-                const promises = values.map((value) => getProductAgentId(value.agentId.agentId))
+                const ids = values.map((value) => getProductAgentId(value.agentId.agentId))
                     .filter((id) => id !== undefined)
-                    .map(async (id) => await ProductAgent.get(id).get());
+                    .filter((id) =>  !processedIds.has(id));
 
-                const products = await Promise.all(promises);
 
-                for (const product of products) {
+                // if (ids.length > 0) {
+                //     const idsChunks = arrayChunks(ids, 5);
+                //
+                //     for (const ids of idsChunks) {
+                //         const promises = ids.map(async (id) => await ProductAgent.get(id).get());
+                //
+                //         const products = await Promise.all(promises);
+                //
+                //         for (const product of products) {
+                //             if (product) {
+                //                 processedIds.add(product.productId);
+                //                 if (matcher.matches(product)) {
+                //                     products.push(product);
+                //                 }
+                //             }
+                //         }
+                //     }
+                // }
+
+                for (const id of ids) {
+                    let product = await ProductAgent.get(id).get();
+                    processedIds.add(id);
                     if (product && matcher.matches(product)) {
                         products.push(product);
                     }
                 }
-
-                // for (const value of values) {
-                //     let id = getProductAgentId(value.agentId.agentId)
-                //     if (id) {
-                //         let product = await ProductAgent.get(id).get();
-                //         if (product && matcher.matches(product)) {
-                //             products.push(product);
-                //         }
-                //     }
-                // }
                 values = await getter.getNext();
             }
 
