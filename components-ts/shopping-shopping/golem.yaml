@@ -9,7 +9,7 @@
 httpApi:
   definitions:
     shopping-shopping-api:
-      version: '0.0.2'
+      version: '0.0.1'
       routes:
         - method: GET
           path: "/v1/pricing/{product-id}"

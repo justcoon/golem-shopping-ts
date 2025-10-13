@@ -7,7 +7,8 @@
     "components-ts/*/*"
   ],
   "dependencies": {
-      "@golemcloud/golem-ts-sdk": "0.0.49"
+    "@golemcloud/golem-ts-sdk": "0.0.49",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@rollup/plugin-alias": "^5.1.1",
