@@ -1,10 +1,9 @@
 import {
     BaseAgent,
     agent,
-    prompt,
-    generateIdempotencyKey,
+    prompt
 } from '@golemcloud/golem-ts-sdk';
-import {uuidToString} from "golem:rpc/types@0.2.2";
+import {v4 as uuidv4} from 'uuid';
 import {Address, CURRENCY, PRICING_ZONE_DEFAULT, Result} from "./common";
 import {ProductAgent} from "./product";
 import {PricingAgent} from "./pricing";
@@ -162,8 +161,7 @@ export const getItemsTotalPrice = (items: CartItem[]): number => {
 }
 
 function generateOrderId(): string {
-    let uuid = generateIdempotencyKey();
-    return uuidToString(uuid);
+    return uuidv4()
 }
 
 export type AddItemResult = Result<boolean, AddItemError>
