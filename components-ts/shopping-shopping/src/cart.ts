@@ -176,11 +176,13 @@ export type CheckoutResult = Result<OrderConfirmation, CheckoutError>
 @agent()
 export class CartAgent extends BaseAgent {
     private readonly userId: string;
+    private readonly updateInGet: boolean;
     private value: Cart | undefined = undefined;
 
     constructor(id: string) {
         super()
         this.userId = id;
+        this.updateInGet = true; // update cart in get
     }
 
     private updateValue<T>(fn: (value: Cart) => T): T {
@@ -351,6 +353,26 @@ export class CartAgent extends BaseAgent {
 
     @prompt("Get cart")
     async get(): Promise<Cart | undefined> {
+        if (this.value && this.updateInGet && this.value.items.length > 0) {
+            const newItems: CartItem[] = [];
+            for (const item of this.value.items) {
+                let product = await ProductAgent.get(item.productId).get();
+                let pricing = await PricingAgent.get(item.productId).getPrice(this.value.currency, PRICING_ZONE_DEFAULT);
+
+                if (product && pricing) {
+                    newItems.push({
+                        productId: item.productId,
+                        productName: product.name,
+                        productBrand: product.brand,
+                        price: pricing.price,
+                        quantity: item.quantity
+                    });
+                }
+            }
+            this.value.items = newItems;
+            this.value.total = getItemsTotalPrice(newItems)
+        }
+
         return this.value;
     }
 }
