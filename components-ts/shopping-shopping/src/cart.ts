@@ -1,10 +1,11 @@
 import {
     BaseAgent,
     agent,
-    prompt
+    prompt,
+    Result
 } from '@golemcloud/golem-ts-sdk';
 import {v4 as uuidv4} from 'uuid';
-import {Address, CURRENCY, PRICING_ZONE_DEFAULT, Result} from "./common";
+import {Address, CURRENCY, PRICING_ZONE_DEFAULT} from "./common";
 import {ProductAgent} from "./product";
 import {PricingAgent} from "./pricing";
 import {OrderAgent} from "./order";
