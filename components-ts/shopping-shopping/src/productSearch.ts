@@ -167,69 +167,43 @@ export class ProductSearchAgent extends BaseAgent {
             let values = await getter.getNext();
 
             const processedIds = new Set<string>();
-            // while (values && values.length > 0) {
-            //
-            //     const ids = values.map((value) => getProductAgentId(value.agentId.agentId))
-            //         .filter((id) => id !== undefined)
-            //         .filter((id) =>  !processedIds.has(id));
-            //
-            //
-            //     if (ids.length > 0) {
-            //         const idsChunks = arrayChunks(ids, 5);
-            //
-            //         for (const ids of idsChunks) {
-            //             console.log("Search products - ids:  "+ ids);
-            //             const promises = ids.map(async (id) => await ProductAgent.get(id).get());
-            //
-            //             const products = await Promise.all(promises);
-            //
-            //             for (const product of products) {
-            //                 if (product) {
-            //                     processedIds.add(product.productId);
-            //                     if (matcher.matches(product)) {
-            //                         products.push(product);
-            //                     }
-            //                 }
-            //             }
-            //         }
-            //     }
-            //
-            //     // for (const id of ids) {
-            //     //     let product = await ProductAgent.get(id).get();
-            //     //     processedIds.add(id);
-            //     //     if (product && matcher.matches(product)) {
-            //     //         products.push(product);
-            //     //     }
-            //     // }
-            //     values = await getter.getNext();
-            // }
-
             while (values && values.length > 0) {
-                values.map((value) => getProductAgentId(value.agentId.agentId))
+
+                const ids = values.map((value) => getProductAgentId(value.agentId.agentId))
                     .filter((id) => id !== undefined)
-                    .forEach((id) => processedIds.add(id));
-                values = await getter.getNext();
-            }
+                    .filter((id) =>  !processedIds.has(id));
 
 
-            if (processedIds.size > 0) {
-                const idsChunks = arrayChunks(Array.from(processedIds), 5);
+                if (ids.length > 0) {
+                    const idsChunks = arrayChunks(ids, 5);
 
-                for (const ids of idsChunks) {
-                    console.log("Search products - ids: "+ ids);
-                    const promises = ids.map(async (id) => await ProductAgent.get(id).get());
+                    for (const ids of idsChunks) {
+                        console.log("Search products - ids: "+ ids);
+                        const promises = ids.map(async (id) => await ProductAgent.get(id).get());
 
-                    const products = await Promise.all(promises);
+                        const values = await Promise.all(promises);
 
-                    for (const product of products) {
-                        if (product) {
-                            processedIds.add(product.productId);
-                            if (matcher.matches(product)) {
-                                products.push(product);
+                        console.log("Search products - ids: "+ ids + " fetched: "+ values.length);
+
+                        for (const value of values) {
+                            if (value) {
+                                processedIds.add(value.productId);
+                                if (matcher.matches(value)) {
+                                    products.push(value);
+                                }
                             }
                         }
                     }
                 }
+
+                // for (const id of ids) {
+                //     let value = await ProductAgent.get(id).get();
+                //     processedIds.add(id);
+                //     if (value && matcher.matches(value)) {
+                //         products.push(value);
+                //     }
+                // }
+                values = await getter.getNext();
             }
 
             return Result.ok(products);
@@ -251,23 +225,6 @@ export class ProductSearchAgent extends BaseAgent {
     @prompt("test2")
     async test2(): Promise<Product[]> {
 
-        const products: Product[] = [];
-        const p1 = ProductAgent.get("p001").get();
-        const p2 =  ProductAgent.get("p003").get();
-        const p3 =  ProductAgent.get("p004").get();
-
-        const values = await Promise.all([p1, p2, p3]);
-        for(const value of values) {
-            if(value) {
-                products.push(value);
-            }
-        }
-        return products;
-    }
-
-    @prompt("test3")
-    async test3(): Promise<Product[]> {
-
         const ids = ["p001", "p002", "p003", "p004", "p005"];
 
         console.log("Get products - ids:  "+ ids);
@@ -283,6 +240,7 @@ export class ProductSearchAgent extends BaseAgent {
         }
         return products;
     }
+
 }
 
 
