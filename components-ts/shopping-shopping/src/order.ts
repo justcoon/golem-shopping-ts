@@ -2,8 +2,9 @@ import {
     BaseAgent,
     agent,
     prompt,
+    Result
 } from '@golemcloud/golem-ts-sdk';
-import {Address, CURRENCY, PRICING_ZONE_DEFAULT, Result} from "./common";
+import {Address, CURRENCY, PRICING_ZONE_DEFAULT} from "./common";
 import {ProductAgent} from "./product";
 import {PricingAgent} from "./pricing";
 

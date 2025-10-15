@@ -5,9 +5,9 @@ import {
     GetAgents,
     resolveComponentId,
     AgentAnyFilter,
+    Result
 } from '@golemcloud/golem-ts-sdk';
 import {Product, ProductAgent} from "./product";
-import {Result} from "./common";
 import {parseAgentId} from "golem:agent/host";
 
 const AGENT_FILTER: AgentAnyFilter = {
@@ -148,8 +148,6 @@ export class ProductQueryMatcher {
     }
 }
 
-type SearchResult = Result<Product[], string>
-
 @agent()
 export class ProductSearchAgent extends BaseAgent {
     constructor() {
@@ -157,18 +155,18 @@ export class ProductSearchAgent extends BaseAgent {
     }
 
     @prompt("Search products")
-    async search(query: string): Promise<SearchResult> {
+    async search(query: string): Promise<Result<Product[], string>> {
         const componentId = resolveComponentId("shopping:shopping");
         if (componentId) {
+            console.log("Search products - query:  "+ query);
             const matcher = new ProductQueryMatcher(query);
 
             const products: Product[] = [];
 
-            const processedIds = new Set<string>();
-
             const getter = new GetAgents(componentId, AGENT_FILTER, true);
             let values = await getter.getNext();
 
+            const processedIds = new Set<string>();
             while (values && values.length > 0) {
 
                 const ids = values.map((value) => getProductAgentId(value.agentId.agentId))
@@ -176,32 +174,35 @@ export class ProductSearchAgent extends BaseAgent {
                     .filter((id) =>  !processedIds.has(id));
 
 
-                // if (ids.length > 0) {
-                //     const idsChunks = arrayChunks(ids, 5);
-                //
-                //     for (const ids of idsChunks) {
-                //         const promises = ids.map(async (id) => await ProductAgent.get(id).get());
-                //
-                //         const products = await Promise.all(promises);
-                //
-                //         for (const product of products) {
-                //             if (product) {
-                //                 processedIds.add(product.productId);
-                //                 if (matcher.matches(product)) {
-                //                     products.push(product);
-                //                 }
-                //             }
-                //         }
-                //     }
-                // }
+                if (ids.length > 0) {
+                    const idsChunks = arrayChunks(ids, 5);
 
-                for (const id of ids) {
-                    let product = await ProductAgent.get(id).get();
-                    processedIds.add(id);
-                    if (product && matcher.matches(product)) {
-                        products.push(product);
+                    for (const ids of idsChunks) {
+                        console.log("Search products - ids: "+ ids);
+                        const promises = ids.map(async (id) => await ProductAgent.get(id).get());
+
+                        const values = await Promise.all(promises);
+
+                        console.log("Search products - ids: "+ ids + " fetched: "+ values.length);
+
+                        for (const value of values) {
+                            if (value) {
+                                processedIds.add(value.productId);
+                                if (matcher.matches(value)) {
+                                    products.push(value);
+                                }
+                            }
+                        }
                     }
                 }
+
+                // for (const id of ids) {
+                //     let value = await ProductAgent.get(id).get();
+                //     processedIds.add(id);
+                //     if (value && matcher.matches(value)) {
+                //         products.push(value);
+                //     }
+                // }
                 values = await getter.getNext();
             }
 
@@ -210,4 +211,39 @@ export class ProductSearchAgent extends BaseAgent {
             return Result.err("Component not found");
         }
     }
+
+    @prompt("test")
+    async test(): Promise<number> {
+        const p1 = test(1);
+        const p2 = test(2);
+        const p3 = test(3);
+
+        const vs = await Promise.all([p1, p2, p3]);
+        return vs.reduce((a, b) => a + b);
+    }
+
+    @prompt("test2")
+    async test2(): Promise<Product[]> {
+
+        const ids = ["p001", "p002", "p003", "p004", "p005"];
+
+        console.log("Get products - ids:  "+ ids);
+        const promises = ids.map(async (id) => await ProductAgent.get(id).get());
+
+        const values = await Promise.all(promises);
+
+        const products: Product[] = [];
+        for(const value of values) {
+            if(value) {
+                products.push(value);
+            }
+        }
+        return products;
+    }
+
+}
+
+
+async function test(v: number): Promise<number> {
+    return v;
 }
