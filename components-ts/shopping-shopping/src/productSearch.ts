@@ -158,92 +158,59 @@ export class ProductSearchAgent extends BaseAgent {
     async search(query: string): Promise<Result<Product[], string>> {
         const componentId = resolveComponentId("shopping:shopping");
         if (componentId) {
-            console.log("Search products - query:  "+ query);
+            console.log("Search products - query: " + query);
             const matcher = new ProductQueryMatcher(query);
 
-            const products: Product[] = [];
+            const result: Product[] = [];
+            const processedIds = new Set<string>();
 
             const getter = new GetAgents(componentId, AGENT_FILTER, true);
-            let values = await getter.getNext();
+            let agents = await getter.getNext();
 
-            const processedIds = new Set<string>();
-            while (values && values.length > 0) {
 
-                const ids = values.map((value) => getProductAgentId(value.agentId.agentId))
+            while (agents && agents.length > 0) {
+
+                const ids = agents.map((value) => getProductAgentId(value.agentId.agentId))
                     .filter((id) => id !== undefined)
-                    .filter((id) =>  !processedIds.has(id));
+                    .filter((id) => !processedIds.has(id));
 
-
-                if (ids.length > 0) {
-                    const idsChunks = arrayChunks(ids, 5);
-
-                    for (const ids of idsChunks) {
-                        console.log("Search products - ids: "+ ids);
-                        const promises = ids.map(async (id) => await ProductAgent.get(id).get());
-
-                        const values = await Promise.all(promises);
-
-                        console.log("Search products - ids: "+ ids + " fetched: "+ values.length);
-
-                        for (const value of values) {
-                            if (value) {
-                                processedIds.add(value.productId);
-                                if (matcher.matches(value)) {
-                                    products.push(value);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // for (const id of ids) {
-                //     let value = await ProductAgent.get(id).get();
-                //     processedIds.add(id);
-                //     if (value && matcher.matches(value)) {
-                //         products.push(value);
+                // async fetching failing on https://github.com/golemcloud/golem/issues/2213
+                // if (ids.length > 0) {
+                //     const idsChunks = arrayChunks(ids, 5);
+                //
+                //     for (const ids of idsChunks) {
+                //         console.log("Search products - ids: (" + ids + ")");
+                //         const promises = ids.map(async (id) => await ProductAgent.get(id).get());
+                //
+                //         const promisesResult = await Promise.all(promises);
+                //
+                //         console.log("Search products - ids: (" + ids + ") fetched: " + promisesResult.length);
+                //
+                //         for (const value of promisesResult) {
+                //             if (value) {
+                //                 processedIds.add(value.productId);
+                //                 if (matcher.matches(value)) {
+                //                     result.push(value);
+                //                 }
+                //             }
+                //         }
                 //     }
                 // }
-                values = await getter.getNext();
+
+                // one by one fetching
+                for (const id of ids) {
+                    let value = await ProductAgent.get(id).get();
+                    processedIds.add(id);
+                    if (value && matcher.matches(value)) {
+                        result.push(value);
+                    }
+                }
+                agents = await getter.getNext();
             }
 
-            return Result.ok(products);
+            return Result.ok(result);
         } else {
             return Result.err("Component not found");
         }
     }
-
-    @prompt("test")
-    async test(): Promise<number> {
-        const p1 = test(1);
-        const p2 = test(2);
-        const p3 = test(3);
-
-        const vs = await Promise.all([p1, p2, p3]);
-        return vs.reduce((a, b) => a + b);
-    }
-
-    @prompt("test2")
-    async test2(): Promise<Product[]> {
-
-        const ids = ["p001", "p002", "p003", "p004", "p005"];
-
-        console.log("Get products - ids:  "+ ids);
-        const promises = ids.map(async (id) => await ProductAgent.get(id).get());
-
-        const values = await Promise.all(promises);
-
-        const products: Product[] = [];
-        for(const value of values) {
-            if(value) {
-                products.push(value);
-            }
-        }
-        return products;
-    }
-
-}
-
-
-async function test(v: number): Promise<number> {
-    return v;
 }
