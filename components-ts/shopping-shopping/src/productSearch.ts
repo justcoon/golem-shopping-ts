@@ -40,7 +40,7 @@ function arrayChunks<T>(array: T[], chunkSize: number): T[][] {
     return chunks;
 }
 
-export class ProductQueryMatcher {
+class ProductQueryMatcher {
     private terms: string[];
     private fieldFilters: Map<string, string>;
 
@@ -174,37 +174,28 @@ export class ProductSearchAgent extends BaseAgent {
                     .filter((id) => id !== undefined)
                     .filter((id) => !processedIds.has(id));
 
-                // async fetching failing on https://github.com/golemcloud/golem/issues/2213
-                // if (ids.length > 0) {
-                //     const idsChunks = arrayChunks(ids, 5);
-                //
-                //     for (const ids of idsChunks) {
-                //         console.log("Search products - ids: (" + ids + ")");
-                //         const promises = ids.map(async (id) => await ProductAgent.get(id).get());
-                //
-                //         const promisesResult = await Promise.all(promises);
-                //
-                //         console.log("Search products - ids: (" + ids + ") fetched: " + promisesResult.length);
-                //
-                //         for (const value of promisesResult) {
-                //             if (value) {
-                //                 processedIds.add(value.productId);
-                //                 if (matcher.matches(value)) {
-                //                     result.push(value);
-                //                 }
-                //             }
-                //         }
-                //     }
-                // }
+                if (ids.length > 0) {
+                    const idsChunks = arrayChunks(ids, 5);
 
-                // one by one fetching
-                for (const id of ids) {
-                    let value = await ProductAgent.get(id).get();
-                    processedIds.add(id);
-                    if (value && matcher.matches(value)) {
-                        result.push(value);
+                    for (const ids of idsChunks) {
+                        console.log("Search products - ids: (" + ids + ")");
+                        const promises = ids.map(async (id) => await ProductAgent.get(id).get());
+
+                        const promisesResult = await Promise.all(promises);
+
+                        console.log("Search products - ids: (" + ids + ") fetched: " + promisesResult.length);
+
+                        for (const value of promisesResult) {
+                            if (value) {
+                                processedIds.add(value.productId);
+                                if (matcher.matches(value)) {
+                                    result.push(value);
+                                }
+                            }
+                        }
                     }
                 }
+
                 agents = await getter.getNext();
             }
 
