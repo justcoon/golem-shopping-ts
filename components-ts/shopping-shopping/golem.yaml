@@ -41,16 +41,16 @@ httpApi:
               let agent = pricing-agent(id);
               agent.update-pricing(request.body.msrp-prices, request.body.list-prices);
               {status: 200u64, body: {message: "updated"}}
-        - method: GET
-          path: "/v1/product/search?{query}"
-          binding:
-            type: default
-            componentName: shopping:shopping
-            response: |-
-              let query: string = request.query.query;
-              let agent = product-search-agent();
-              let result = agent.search(query);
-              match result {  ok(x) => {status: 200u64, body: ok(x)}, err(x) => {status: 400u64, body: err({error: x})} }
+#        - method: GET
+#          path: "/v1/product/search?{query}"
+#          binding:
+#            type: default
+#            componentName: shopping:shopping
+#            response: |-
+#              let query: string = request.query.query;
+#              let agent = product-search-agent();
+#              let result = agent.search(query);
+#              match result {  ok(x) => {status: 200u64, body: ok(x)}, err(x) => {status: 400u64, body: err({error: x})} }
         - method: GET
           path: "/v1/product/{product-id}"
           binding:

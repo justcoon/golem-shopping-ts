@@ -4,17 +4,10 @@ import {
     prompt,
 } from '@golemcloud/golem-ts-sdk';
 
-
-export interface Product {
-    productId: string;
-    name: string;
-    brand: string;
-    description: string;
-    tags: string[];
-}
+import {Product, BaseProductAgent} from "common/product";
 
 @agent()
-export class ProductAgent extends BaseAgent {
+export class ProductAgent extends BaseProductAgent {
     private readonly productId: string;
     private value: Product | undefined = undefined;
 

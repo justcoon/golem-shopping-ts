@@ -1,3 +1,2 @@
-export function exampleCommonFunction() {
-    return "hello common";
-}
+
+export * from "./product/product"

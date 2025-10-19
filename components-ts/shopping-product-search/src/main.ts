@@ -1,0 +1,1 @@
+export {ProductSearchAgent} from "./productSearch";
