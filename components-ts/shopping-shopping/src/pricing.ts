@@ -3,7 +3,7 @@ import {
     agent,
     prompt,
 } from '@golemcloud/golem-ts-sdk';
-
+import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
 
 export interface PricingItem {
     price: number;
@@ -11,17 +11,18 @@ export interface PricingItem {
     zone: string;
 }
 
-// export interface SalePricingItem extends PricingItem {
-//     start?: DateTime;
-//     end?: DateTime;
-// }
+export interface SalePricingItem extends PricingItem {
+    start?: Datetime;
+    end?: Datetime;
+}
 
 export interface Pricing {
     productId: string;
     msrpPrices: PricingItem[];
     listPrices: PricingItem[];
-    // "salePrices": SalePricingItem[];
-    // "updated-at": DateTime;
+    salePrices: SalePricingItem[];
+    createdAt: Datetime;
+    updatedAt: Datetime;
 }
 
 export const mergePricingItems = (first: PricingItem[], second: PricingItem[]): PricingItem[] => {
@@ -35,6 +36,22 @@ export const mergePricingItems = (first: PricingItem[], second: PricingItem[]): 
     return Array.from(map.values());
 }
 
+export const mergeSalePricingItems = (first: SalePricingItem[], second: SalePricingItem[]): SalePricingItem[] => {
+    const map = new Map<string, SalePricingItem>();
+    
+    // Add items from first array
+    for (const item of first) {
+        map.set(`${item.currency}-${item.zone}-${item.start?.toString()}-${item.end?.toString()}`, item);
+    }
+    
+    // Add or update items from second array
+    for (const item of second) {
+        map.set(`${item.currency}-${item.zone}-${item.start?.toString()}-${item.end?.toString()}`, item);
+    }
+
+    return Array.from(map.values())
+}
+
 @agent()
 export class PricingAgent extends BaseAgent {
     private readonly productId: string;
@@ -46,19 +63,25 @@ export class PricingAgent extends BaseAgent {
     }
 
     @prompt("Initialize pricing")
-    async initializePricing(msrpPrices: PricingItem[], listPrices: PricingItem[]) {
+    async initializePricing(msrpPrices: PricingItem[], listPrices: PricingItem[], salePrices: SalePricingItem[]) {
+        let date = now();
         this.value = {
             productId: this.productId,
             msrpPrices: msrpPrices,
-            listPrices: listPrices
+            listPrices: listPrices,
+            salePrices: salePrices,
+            createdAt: date,
+            updatedAt: date
         }
     }
 
     @prompt("Update pricing")
-    async updatePricing(msrpPrices: PricingItem[], listPrices: PricingItem[]) {
+    async updatePricing(msrpPrices: PricingItem[], listPrices: PricingItem[], salePrices: SalePricingItem[]) {
         if (this.value) {
             this.value.msrpPrices = mergePricingItems(this.value.msrpPrices, msrpPrices);
             this.value.listPrices = mergePricingItems(this.value.listPrices, listPrices);
+            this.value.salePrices = mergeSalePricingItems(this.value.salePrices, salePrices);
+            this.value.updatedAt = now();
         }
     }
 

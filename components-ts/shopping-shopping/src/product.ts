@@ -3,7 +3,7 @@ import {
     agent,
     prompt,
 } from '@golemcloud/golem-ts-sdk';
-
+import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
 
 export interface Product {
     productId: string;
@@ -11,6 +11,8 @@ export interface Product {
     brand: string;
     description: string;
     tags: string[];
+    createdAt: Datetime;
+    updatedAt: Datetime;
 }
 
 @agent()
@@ -25,12 +27,15 @@ export class ProductAgent extends BaseAgent {
 
     @prompt("Initialize product")
     async initializeProduct(name: string, brand: string, description: string, tags: string[]) {
+        let date = now();
         this.value = {
             productId: this.productId,
             name: name,
             brand: brand,
             description: description,
-            tags: tags
+            tags: tags,
+            createdAt: date,
+            updatedAt: date
         };
     }
 
