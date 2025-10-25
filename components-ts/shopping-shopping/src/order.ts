@@ -4,6 +4,7 @@ import {
     prompt,
     Result
 } from '@golemcloud/golem-ts-sdk';
+import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
 import {Address, CURRENCY, PRICING_ZONE_DEFAULT} from "./common";
 import {ProductAgent} from "./product";
 import {PricingAgent} from "./pricing";
@@ -39,7 +40,7 @@ export interface ActionNotAllowedError {
 export namespace ActionNotAllowedError {
     export function create(status: OrderStatus): ActionNotAllowedError {
         return {
-            message: "Can not update order with status",
+            message: "Can not update order with orderStatus",
             status
         };
     }
@@ -158,14 +159,15 @@ export interface OrderItem {
 export interface Order {
     orderId: string,
     userId: string;
-    status: OrderStatus;
+    orderStatus: OrderStatus;
     items: OrderItem[];
     email?: string;
     billingAddress?: Address;
     shippingAddress?: Address;
     total: number;
     currency: string;
-    // "updated-at": DateTime;
+    createdAt: Datetime;
+    updatedAt: Datetime;
 }
 
 export enum OrderStatus {
@@ -182,7 +184,7 @@ export interface CreateOrder {
     shippingAddress?: Address;
     total: number;
     currency: string;
-    // "updated-at": DateTime;
+    updatedAt: Datetime;
 }
 
 export const getItemsTotalPrice = (items: OrderItem[]): number => {
@@ -210,16 +212,19 @@ export class OrderAgent extends BaseAgent {
 
     private updateValue<T>(fn: (value: Order) => T): T {
         if (!this.value) {
+            let date = now();
             this.value = {
                 orderId: this.orderId,
                 userId: "",
                 items: [],
                 total: 0,
                 currency: CURRENCY,
-                status: OrderStatus.new,
+                orderStatus: OrderStatus.new,
                 email: undefined,
                 billingAddress: undefined,
                 shippingAddress: undefined,
+                createdAt: date,
+                updatedAt: date,
             }
         }
         return fn(this.value)
@@ -228,7 +233,7 @@ export class OrderAgent extends BaseAgent {
     @prompt("Create order")
     async create(order: CreateOrder): Promise<InitOrderResult> {
         return this.updateValue(async (value) => {
-            if (value.status == OrderStatus.new) {
+            if (value.orderStatus == OrderStatus.new) {
                 value.userId = order.userId;
                 value.items = order.items;
                 value.email = order.email;
@@ -236,10 +241,11 @@ export class OrderAgent extends BaseAgent {
                 value.shippingAddress = order.shippingAddress;
                 value.total = order.total;
                 value.currency = order.currency;
-                value.status = OrderStatus.new;
+                value.orderStatus = OrderStatus.new;
+                value.updatedAt = now();
                 return Result.ok(true);
             } else {
-                return Result.err(InitOrderError.actionNotAllowed(ActionNotAllowedError.create(value.status)));
+                return Result.err(InitOrderError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
         })
     }
@@ -247,7 +253,7 @@ export class OrderAgent extends BaseAgent {
     @prompt("Add item to order")
     async addItem(productId: string, quantity: number): Promise<AddItemResult> {
         return this.updateValue(async (value) => {
-            if (value.status == OrderStatus.new) {
+            if (value.orderStatus == OrderStatus.new) {
                 let item = value.items.find(item => item.productId === productId);
                 if (item) {
                     item.quantity = quantity;
@@ -274,12 +280,13 @@ export class OrderAgent extends BaseAgent {
                             price: pricing.price,
                             quantity
                         });
-                        value.total = getItemsTotalPrice(value.items)
+                        value.total = getItemsTotalPrice(value.items);
+                        value.updatedAt = now();
                         return Result.ok(true);
                     }
                 }
             } else {
-                return Result.err(AddItemError.actionNotAllowed(ActionNotAllowedError.create(value.status)));
+                return Result.err(AddItemError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
         });
     }
@@ -287,11 +294,12 @@ export class OrderAgent extends BaseAgent {
     @prompt("Update item quantity in order")
     async updateItemQuantity(productId: string, quantity: number): Promise<UpdateItemQuantityResult> {
         return this.updateValue(async (value) => {
-            if (value.status == OrderStatus.new) {
+            if (value.orderStatus == OrderStatus.new) {
                 let item = value.items.find(item => item.productId === productId);
                 if (item) {
                     item.quantity = quantity;
-                    value.total = getItemsTotalPrice(value.items)
+                    value.total = getItemsTotalPrice(value.items);
+                    value.updatedAt = now();
                     return Result.ok(true);
                 } else {
                     return Result.err(UpdateItemQuantityError.itemNotFound({
@@ -300,7 +308,7 @@ export class OrderAgent extends BaseAgent {
                     }));
                 }
             } else {
-                return Result.err(UpdateItemQuantityError.actionNotAllowed(ActionNotAllowedError.create(value.status)));
+                return Result.err(UpdateItemQuantityError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
         });
     }
@@ -308,11 +316,12 @@ export class OrderAgent extends BaseAgent {
     @prompt("Remove item from order")
     async removeItem(productId: string): Promise<RemoveItemResult> {
         return this.updateValue(async (value) => {
-            if (value.status == OrderStatus.new) {
+            if (value.orderStatus == OrderStatus.new) {
                 let newItems = value.items.filter(item => item.productId !== productId)
                 if (value.items.length !== newItems.length) {
                     value.items = newItems
-                    value.total = getItemsTotalPrice(newItems)
+                    value.total = getItemsTotalPrice(newItems);
+                    value.updatedAt = now();
                     return Result.ok(true);
                 } else {
                     return Result.err(RemoveItemError.itemNotFound({
@@ -321,7 +330,7 @@ export class OrderAgent extends BaseAgent {
                     }));
                 }
             } else {
-                return Result.err(RemoveItemError.actionNotAllowed(ActionNotAllowedError.create(value.status)));
+                return Result.err(RemoveItemError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
         })
     }
@@ -329,11 +338,12 @@ export class OrderAgent extends BaseAgent {
     @prompt("Update billing address in order")
     async updateBillingAddress(address: Address): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
-            if (value.status == OrderStatus.new) {
+            if (value.orderStatus == OrderStatus.new) {
                 value.billingAddress = address;
+                value.updatedAt = now();
                 return Result.ok(true);
             } else {
-                return Result.err(UpdateAddressError.actionNotAllowed(ActionNotAllowedError.create(value.status)));
+                return Result.err(UpdateAddressError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
         })
     }
@@ -341,11 +351,12 @@ export class OrderAgent extends BaseAgent {
     @prompt("Update shipping address in order")
     async updateShippingAddress(address: Address): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
-            if (value.status == OrderStatus.new) {
+            if (value.orderStatus == OrderStatus.new) {
                 value.shippingAddress = address;
+                value.updatedAt = now();
                 return Result.ok(true);
             } else {
-                return Result.err(UpdateAddressError.actionNotAllowed(ActionNotAllowedError.create(value.status)));
+                return Result.err(UpdateAddressError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
         })
     }
@@ -353,11 +364,12 @@ export class OrderAgent extends BaseAgent {
     @prompt("Update email in order")
     async updateEmail(email: string): Promise<UpdateEmailResult> {
         return this.updateValue(async (value) => {
-            if (value.status == OrderStatus.new) {
+            if (value.orderStatus == OrderStatus.new) {
                 value.email = email;
+                value.updatedAt = now();
                 return Result.ok(true);
             } else {
-                return Result.err(UpdateEmailError.actionNotAllowed(ActionNotAllowedError.create(value.status)));
+                return Result.err(UpdateEmailError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
         })
     }
@@ -365,11 +377,12 @@ export class OrderAgent extends BaseAgent {
     @prompt("Cancel order")
     async cancelOrder(): Promise<CancelOrderResult> {
         return this.updateValue(async (value) => {
-            if (value.status == OrderStatus.new) {
-                value.status = OrderStatus.cancelled;
+            if (value.orderStatus == OrderStatus.new) {
+                value.orderStatus = OrderStatus.cancelled;
+                value.updatedAt = now();
                 return Result.ok(true);
             } else {
-                return Result.err(CancelOrderError.actionNotAllowed(ActionNotAllowedError.create(value.status)));
+                return Result.err(CancelOrderError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
         })
     }
@@ -377,11 +390,12 @@ export class OrderAgent extends BaseAgent {
     @prompt("Ship order")
     async shipOrder(): Promise<ShipOrderResult> {
         return this.updateValue(async (value) => {
-            if (value.status == OrderStatus.new) {
-                value.status = OrderStatus.shipped;
+            if (value.orderStatus == OrderStatus.new) {
+                value.orderStatus = OrderStatus.shipped;
+                value.updatedAt = now();
                 return Result.ok(true);
             } else {
-                return Result.err(ShipOrderError.actionNotAllowed(ActionNotAllowedError.create(value.status)));
+                return Result.err(ShipOrderError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
         })
     }
