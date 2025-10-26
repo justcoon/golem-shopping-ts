@@ -2,8 +2,9 @@ import {
     BaseAgent,
     agent,
     prompt,
-    Result
+    Result,
 } from '@golemcloud/golem-ts-sdk';
+import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
 import {v4 as uuidv4} from 'uuid';
 import {Address, CURRENCY, PRICING_ZONE_DEFAULT} from "./common";
 import {ProductAgent} from "./product";
@@ -151,6 +152,7 @@ export interface Cart {
     total: number;
     currency: string;
     previousOrderIds: string[];
+    updatedAt: Datetime
 }
 
 export interface OrderConfirmation {
@@ -193,6 +195,7 @@ export class CartAgent extends BaseAgent {
                 total: 0,
                 currency: CURRENCY,
                 previousOrderIds: [],
+                updatedAt: now()
             }
         }
         return fn(this.value)
@@ -227,7 +230,8 @@ export class CartAgent extends BaseAgent {
                         price: pricing.price,
                         quantity
                     });
-                    value.total = getItemsTotalPrice(value.items)
+                    value.total = getItemsTotalPrice(value.items);
+                    value.updatedAt = now();
                     return Result.ok(true);
                 }
             }
@@ -240,7 +244,8 @@ export class CartAgent extends BaseAgent {
             let item = value.items.find(item => item.productId === productId);
             if (item) {
                 item.quantity = quantity;
-                value.total = getItemsTotalPrice(value.items)
+                value.total = getItemsTotalPrice(value.items);
+                value.updatedAt = now();
                 return Result.ok(true);
             } else {
                 return Result.err(UpdateItemQuantityError.itemNotFound({
@@ -257,7 +262,8 @@ export class CartAgent extends BaseAgent {
             let newItems = value.items.filter(item => item.productId !== productId)
             if (value.items.length !== newItems.length) {
                 value.items = newItems
-                value.total = getItemsTotalPrice(newItems)
+                value.total = getItemsTotalPrice(newItems);
+                value.updatedAt = now();
                 return Result.ok(true);
             } else {
                 return Result.err(RemoveItemError.itemNotFound({
@@ -272,6 +278,7 @@ export class CartAgent extends BaseAgent {
     async updateBillingAddress(address: Address): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
             value.billingAddress = address;
+            value.updatedAt = now();
             return Result.ok(true);
         })
     }
@@ -280,6 +287,7 @@ export class CartAgent extends BaseAgent {
     async updateShippingAddress(address: Address): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
             value.shippingAddress = address;
+            value.updatedAt = now();
             return Result.ok(true);
         })
     }
@@ -288,6 +296,7 @@ export class CartAgent extends BaseAgent {
     async updateEmail(email: string): Promise<UpdateEmailResult> {
         return this.updateValue(async (value) => {
             value.email = email;
+            value.updatedAt = now();
             return Result.ok(true);
         })
     }
@@ -320,7 +329,8 @@ export class CartAgent extends BaseAgent {
                 billingAddress: value.billingAddress,
                 shippingAddress: value.shippingAddress,
                 total: value.total,
-                currency: value.currency
+                currency: value.currency,
+                updatedAt: value.updatedAt
             }
 
             let result = await OrderAgent.get(orderId).create(order);
@@ -335,6 +345,7 @@ export class CartAgent extends BaseAgent {
                 value.billingAddress = undefined;
                 value.shippingAddress = undefined;
                 value.previousOrderIds.push(orderId);
+                value.updatedAt = now();
 
                 return Result.ok({orderId});
             }
@@ -370,7 +381,8 @@ export class CartAgent extends BaseAgent {
                 }
             }
             this.value.items = newItems;
-            this.value.total = getItemsTotalPrice(newItems)
+            this.value.total = getItemsTotalPrice(newItems);
+            this.value.updatedAt = now();
         }
 
         return this.value;
