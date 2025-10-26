@@ -9,6 +9,7 @@ import {
 } from '@golemcloud/golem-ts-sdk';
 import {Product, ProductAgent} from "./product";
 import {parseAgentId} from "golem:agent/host";
+import {arrayChunks} from "./common";
 
 const AGENT_FILTER: AgentAnyFilter = {
     filters: [{
@@ -29,17 +30,6 @@ function getProductAgentId(agentName: string): string | undefined {
     const match = agentName.match(/^product-agent\("([^"]+)"\)$/);
     return match ? match[1] : undefined;
 }
-
-function arrayChunks<T>(array: T[], chunkSize: number): T[][] {
-    const chunks: T[][] = [];
-
-    for (let i = 0; i < array.length; i += chunkSize) {
-        chunks.push(array.slice(i, i + chunkSize));
-    }
-
-    return chunks;
-}
-
 class ProductQueryMatcher {
     private terms: string[];
     private fieldFilters: Map<string, string>;

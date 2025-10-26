@@ -231,7 +231,7 @@ components:
     # OPENAI_API_KEY: "<KEY>"
 
     ## OpenRouter
-    # OPENROUTER_API_KEY: "<KEY>"
+     OPENROUTER_API_KEY:  '{{ OPENROUTER_KEY }}'
 
     ## Amazon Bedrock
     # AWS_ACCESS_KEY_ID: "<KEY>"
@@ -376,8 +376,8 @@ dependencies:
   #   url: https://github.com/golemcloud/golem-ai/releases/download/v0.3.0-dev.8/golem_llm_openai-dev.wasm
 
   ## OpenRouter
-  # - type: wasm
-  #   url: https://github.com/golemcloud/golem-ai/releases/download/v0.3.0-dev.8/golem_llm_openrouter-dev.wasm
+   - type: wasm
+     url: https://github.com/golemcloud/golem-ai/releases/download/v0.3.0-dev.8/golem_llm_openrouter-dev.wasm
 
   ## Amazon Bedrock
   # - type: wasm
