@@ -1,19 +1,19 @@
-import {agent, BaseAgent} from "@golemcloud/golem-ts-sdk";
+import {agent, BaseAgent, prompt} from "@golemcloud/golem-ts-sdk";
 
 import * as llm from 'golem:llm/llm@1.0.0';
 import {CartAgent} from "./cart";
 import {OrderAgent, OrderItem} from "./order";
 import {arrayChunks} from "./common";
 import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
+import {ProductAgent, Product} from "./product";
 
 export interface RecommendedItems {
-    items: OrderItem[];
+    productIds: string[];
     createdAt: Datetime;
     updatedAt: Datetime;
 }
 
 function cleanMarkdownJsonString(input: string): string {
-    // Remove markdown code block syntax if present
     return input.replace(/^```(?:json)?\s*([\s\S]*?)\s*```$/, '$1').trim();
 }
 
@@ -50,9 +50,7 @@ async function getOrderItems(id: string): Promise<OrderItem[]> {
 
         for (const ids of idsChunks) {
             const promises = ids.map(async (id) => await OrderAgent.get(id).get());
-
             const promisesResult = await Promise.all(promises);
-
             for (const value of promisesResult) {
                 if (value) {
                     result.push(...value.items);
@@ -61,6 +59,13 @@ async function getOrderItems(id: string): Promise<OrderItem[]> {
         }
     }
     return reduceOrderItems(result);
+}
+
+async function getProducts(ids: string[]): Promise<Product[]> {
+    const promises = ids.map(async (id) => await ProductAgent.get(id).get());
+    const promisesResult = await Promise.all(promises);
+    const result: Product[]  = promisesResult.filter((value) => value !== undefined);
+    return result;
 }
 
 @agent()
@@ -73,16 +78,19 @@ export class ShoppingAssistantAgent extends BaseAgent {
         this.id = id;
         let date = now();
         this.recommendedItems = {
-            items: [],
+            productIds: [],
             createdAt: date,
             updatedAt: date,
         };
     }
 
-    async getRecommendedItems(): Promise<RecommendedItems> {
-        return this.recommendedItems;
+    @prompt("Get recommended items")
+    async getRecommendedItems(): Promise<Product[]> {
+        const products = await getProducts(this.recommendedItems.productIds);
+        return products;
     }
 
+    @prompt("Recommend items")
     async recommendItems(): Promise<boolean> {
         console.log("Recommend items for user: " + this.id);
         const currentItems = await getOrderItems(this.id);
@@ -95,8 +103,7 @@ export class ShoppingAssistantAgent extends BaseAgent {
                     content: [{
                         tag: "text",
                         val: `We have a list of order items: ${currentItemsString}. 
-                        Can you do 5 recommendations for items to buy. Return them as a valid JSON array with same format as the input. Return JSON only.
-                        `
+                        Can you do 5 recommendations for items to buy. Return them as a valid JSON array with same format as the input. Return JSON only.`
                     }]
                 }
             }],
@@ -117,7 +124,7 @@ export class ShoppingAssistantAgent extends BaseAgent {
         try {
             console.log("Recommend items for user: " + this.id + " - processing LLM's result ...");
             const result: OrderItem[] = JSON.parse(raw);
-            this.recommendedItems.items = result;
+            this.recommendedItems.productIds = result.map((value) => value.productId);
             this.recommendedItems.updatedAt = now();
             console.log("Recommend items for user: " + this.id + " - count: " + result.length);
             return true;

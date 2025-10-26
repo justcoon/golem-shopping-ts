@@ -199,7 +199,16 @@ httpApi:
             response: "let id: string = request.path.order-id;\nlet agent = order-agent(id);\nlet result = agent.remove-item(request.path.product-id);\nmatch
             result {  ok(_) => {status: 200u64, body: ok({message: \"item removed\"})},
             err(x) => {status: 400u64, body: err({error: x})} } "
-
+        - method: GET
+          path: "/v1/assistant/{user-id}/recommended-items"
+          binding:
+            type: default
+            componentName: shopping:shopping
+            response: |-
+              let id: string = request.path.user-id;
+              let agent = shopping-assistant-agent(id);
+              let result = agent.get-recommended-items();
+              {status: 200u64, body: result }
 
   deployments:
     local:

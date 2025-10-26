@@ -10,6 +10,7 @@ import {Address, CURRENCY, PRICING_ZONE_DEFAULT} from "./common";
 import {ProductAgent} from "./product";
 import {PricingAgent} from "./pricing";
 import {OrderAgent} from "./order";
+import {ShoppingAssistantAgent} from "./shoppingAssistant";
 
 export interface ProductNotFoundError {
     message: string;
@@ -346,6 +347,8 @@ export class CartAgent extends BaseAgent {
                 value.shippingAddress = undefined;
                 value.previousOrderIds.push(orderId);
                 value.updatedAt = now();
+
+                // ShoppingAssistantAgent.get(this.userId).recommendItems.trigger();
 
                 return Result.ok({orderId});
             }
