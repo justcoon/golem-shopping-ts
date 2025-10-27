@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
 import { ref } from "vue";
+import {useAssistantStore} from "@/stores/assistantStore.ts";
+import {useCartStore} from "@/stores/cartStore.ts";
 
 export interface PricePreferences {
   currency: string;
@@ -15,6 +17,9 @@ export const useAuthStore = defineStore("auth", () => {
   const userId = ref<string | null>(localStorage.getItem("userId"));
   const isAuthenticated = ref(!!userId.value);
 
+  const assistantStore = useAssistantStore();
+  const cartStore = useCartStore();
+
   // Default price preferences
   const pricePreferences = ref<PricePreferences>({ ...DEFAULT_PREFERENCES });
 
@@ -28,6 +33,8 @@ export const useAuthStore = defineStore("auth", () => {
     userId.value = null;
     isAuthenticated.value = false;
     localStorage.removeItem("userId");
+    assistantStore.clearRecommendations();
+    cartStore.clearCart();
   };
 
   return {

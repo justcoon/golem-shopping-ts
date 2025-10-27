@@ -9,7 +9,7 @@
 httpApi:
   definitions:
     shopping-shopping-api:
-      version: '0.0.1'
+      version: '0.0.2'
       routes:
         - method: GET
           path: "/v1/pricing/{product-id}"
@@ -199,7 +199,16 @@ httpApi:
             response: "let id: string = request.path.order-id;\nlet agent = order-agent(id);\nlet result = agent.remove-item(request.path.product-id);\nmatch
             result {  ok(_) => {status: 200u64, body: ok({message: \"item removed\"})},
             err(x) => {status: 400u64, body: err({error: x})} } "
-
+        - method: GET
+          path: "/v1/assistant/{user-id}/recommended-products"
+          binding:
+            type: default
+            componentName: shopping:shopping
+            response: |-
+              let id: string = request.path.user-id;
+              let agent = shopping-assistant-agent(id);
+              let result = agent.get-recommended-products();
+              {status: 200u64, body: result }
 
   deployments:
     local:
@@ -231,7 +240,7 @@ components:
     # OPENAI_API_KEY: "<KEY>"
 
     ## OpenRouter
-    # OPENROUTER_API_KEY: "<KEY>"
+     OPENROUTER_API_KEY:  '{{ OPENROUTER_KEY }}'
 
     ## Amazon Bedrock
     # AWS_ACCESS_KEY_ID: "<KEY>"
@@ -376,8 +385,8 @@ dependencies:
   #   url: https://github.com/golemcloud/golem-ai/releases/download/v0.3.0-dev.8/golem_llm_openai-dev.wasm
 
   ## OpenRouter
-  # - type: wasm
-  #   url: https://github.com/golemcloud/golem-ai/releases/download/v0.3.0-dev.8/golem_llm_openrouter-dev.wasm
+   - type: wasm
+     url: https://github.com/golemcloud/golem-ai/releases/download/v0.3.0-dev.8/golem_llm_openrouter-dev.wasm
 
   ## Amazon Bedrock
   # - type: wasm

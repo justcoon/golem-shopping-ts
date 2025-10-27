@@ -9,6 +9,7 @@ This is a demo of a shopping app using Golem 1.3.
 - order: Order agent
 - cart: Cart agent
 - product-search: Product search agent
+- shopping-assistant: Shopping assistant agent
 
 
 ### Architecture Overview

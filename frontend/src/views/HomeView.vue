@@ -3,12 +3,14 @@ import { ref, onMounted, computed } from "vue";
 import { useProductStore } from "@/stores/productStore";
 import { useCartStore } from "@/stores/cartStore";
 import { useAuthStore } from "@/stores/authStore";
+import { useAssistantStore } from "@/stores/assistantStore.ts";
 import ProductCard from "@/components/ProductCard.vue";
 import type { Product } from "@/api/services/productService.ts";
 
 const productStore = useProductStore();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const assistantStore = useAssistantStore();
 
 const isAddingToCart = ref(false);
 const currentUserId = authStore.userId;
@@ -18,6 +20,9 @@ onMounted(async () => {
   if (productStore.products.length === 0) {
     await productStore.search("", authStore.pricePreferences); // Empty search to get featured products
   }
+  if (assistantStore.recommendedProducts.length === 0) {
+    await assistantStore.fetchRecommendedProducts(authStore.pricePreferences);
+  }
 });
 
 // Get featured products (first 4 products for the homepage)
@@ -25,8 +30,15 @@ const featuredProducts = computed(() => {
   return productStore.products.slice(0, 4);
 });
 
-const isLoading = computed(() => productStore.isLoading);
-const error = computed(() => productStore.error);
+const recommendedProducts = computed(() => {
+  return assistantStore.recommendedProducts;
+});
+
+const isProductStoreLoading = computed(() => productStore.isLoading);
+const productStoreError = computed(() => productStore.error);
+
+const isAssistantStoreLoading = computed(() => assistantStore.isLoading);
+const assistantStoreError = computed(() =>  assistantStore.error);
 
 import { useRouter } from "vue-router";
 
@@ -70,9 +82,9 @@ const addToCart = async (product: Product) => {
     <section class="featured-products">
       <div class="container">
         <h2 class="section-title">Featured Products</h2>
-        <div v-if="isLoading" class="loading">Loading products...</div>
-        <div v-else-if="error" class="error">
-          Error loading products: {{ error.message }}
+        <div v-if="isProductStoreLoading" class="loading">Loading products...</div>
+        <div v-else-if="productStoreError" class="error">
+          Error loading products: {{ productStoreError.message }}
         </div>
         <div v-else class="product-grid">
           <ProductCard
@@ -81,6 +93,25 @@ const addToCart = async (product: Product) => {
             :product="product"
             :is-adding-to-cart="isAddingToCart"
             @add-to-cart="addToCart"
+          />
+        </div>
+      </div>
+    </section>
+
+    <section class="recommended-products">
+      <div class="container">
+        <h2 class="section-title">Recommended Products</h2>
+        <div v-if="isAssistantStoreLoading" class="loading">Loading products...</div>
+        <div v-else-if="assistantStoreError" class="error">
+          Error loading products: {{ assistantStoreError.message }}
+        </div>
+        <div v-else class="product-grid">
+          <ProductCard
+              v-for="product in recommendedProducts"
+              :key="product['product-id']"
+              :product="product"
+              :is-adding-to-cart="isAddingToCart"
+              @add-to-cart="addToCart"
           />
         </div>
       </div>
