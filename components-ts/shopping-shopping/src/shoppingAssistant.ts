@@ -7,6 +7,8 @@ import {arrayChunks} from "./common";
 import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
 import {ProductAgent, Product} from "./product";
 
+export const RECOMMENDATION_COUNT = 4;
+
 export interface RecommendedItems {
     productIds: string[];
     createdAt: Datetime;
@@ -24,10 +26,8 @@ function reduceOrderItems(items: OrderItem[]): OrderItem[] {
         const existingItem = itemMap.get(item.productId);
 
         if (existingItem) {
-            // If the item already exists, update the quantity
             existingItem.quantity += item.quantity;
         } else {
-            // Create a new item with the same properties
             itemMap.set(item.productId, {
                 ...item
             });
@@ -64,8 +64,50 @@ async function getOrderItems(id: string): Promise<OrderItem[]> {
 async function getProducts(ids: string[]): Promise<Product[]> {
     const promises = ids.map(async (id) => await ProductAgent.get(id).get());
     const promisesResult = await Promise.all(promises);
-    const result: Product[]  = promisesResult.filter((value) => value !== undefined);
+    const result: Product[] = promisesResult.filter((value) => value !== undefined);
     return result;
+}
+
+async function getLLMRecommendations(input: OrderItem[]): Promise<OrderItem[] | undefined> {
+    let llmResponse: string | undefined = undefined;
+    try {
+        const currentItemsString = JSON.stringify(input);
+        let response = llm.send([{
+                tag: "message",
+                val: {
+                    role: "user",
+                    content: [{
+                        tag: "text",
+                        val: `We have a list of order items: ${currentItemsString}. 
+                        Can you do ${RECOMMENDATION_COUNT} recommendations for items to buy. Return them as a valid JSON array with same format as the input. Return JSON only.`
+                    }]
+                }
+            }],
+            {
+                model: "tngtech/deepseek-r1t2-chimera:free",
+                providerOptions: [{
+                    key: "responseFormat",
+                    value: "json_object"
+                }]
+            }
+        );
+        const responseContent =
+            response.content.filter(c => c.tag === "text").map(c => c.val).join();
+
+        llmResponse = cleanMarkdownJsonString(responseContent.trim())
+    } catch (err) {
+        console.warn(`LLM recommend items - failed to get result: ${err}`)
+    }
+
+    if (llmResponse) {
+        try {
+            return JSON.parse(llmResponse);
+        } catch (err) {
+            console.warn(`LLM recommend items - failed to parse LLM's result: ${llmResponse}: ${err}`)
+        }
+    }
+
+    return undefined
 }
 
 @agent()
@@ -85,51 +127,30 @@ export class ShoppingAssistantAgent extends BaseAgent {
     }
 
     @prompt("Get recommended items")
-    async getRecommendedItems(): Promise<Product[]> {
+    async getRecommendedProducts(): Promise<Product[]> {
         const products = await getProducts(this.recommendedItems.productIds);
         return products;
+    }
+
+    @prompt("Get recommended items state")
+    async getRecommendedItems(): Promise<RecommendedItems> {
+        return this.recommendedItems
     }
 
     @prompt("Recommend items")
     async recommendItems(): Promise<boolean> {
         console.log("Recommend items for user: " + this.id);
+
         const currentItems = await getOrderItems(this.id);
 
-        const currentItemsString = JSON.stringify(currentItems);
-        let response = llm.send([{
-                tag: "message",
-                val: {
-                    role: "user",
-                    content: [{
-                        tag: "text",
-                        val: `We have a list of order items: ${currentItemsString}. 
-                        Can you do 5 recommendations for items to buy. Return them as a valid JSON array with same format as the input. Return JSON only.`
-                    }]
-                }
-            }],
-            {
-                model: "tngtech/deepseek-r1t2-chimera:free",
-                providerOptions: [{
-                    key: "responseFormat",
-                    value: "json_object"
-                }]
-            }
-        );
+        const llmRecommendations = await getLLMRecommendations(currentItems);
 
-        const responseContent =
-            response.content.filter(c => c.tag === "text").map(c => c.val).join();
-
-        const raw = cleanMarkdownJsonString(responseContent.trim());
-
-        try {
-            console.log("Recommend items for user: " + this.id + " - processing LLM's result ...");
-            const result: OrderItem[] = JSON.parse(raw);
-            this.recommendedItems.productIds = result.map((value) => value.productId);
+        if(llmRecommendations) {
+            this.recommendedItems.productIds = llmRecommendations.map((value) => value.productId);
             this.recommendedItems.updatedAt = now();
-            console.log("Recommend items for user: " + this.id + " - count: " + result.length);
+            console.log("Recommend items for user: " + this.id + " - count: " + llmRecommendations.length);
             return true;
-        } catch (err) {
-            console.warn(`Recommend items for user: ${this.id} - failed to parse LLM's result: ${raw}: ${err}`)
+        } else {
             return false;
         }
     }

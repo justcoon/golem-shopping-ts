@@ -348,7 +348,7 @@ export class CartAgent extends BaseAgent {
                 value.previousOrderIds.push(orderId);
                 value.updatedAt = now();
 
-                // ShoppingAssistantAgent.get(this.userId).recommendItems.trigger();
+                ShoppingAssistantAgent.get(this.userId).recommendItems.trigger();
 
                 return Result.ok({orderId});
             }
