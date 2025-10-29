@@ -64,8 +64,7 @@ async function getOrderItems(id: string): Promise<OrderItem[]> {
 async function getProducts(ids: string[]): Promise<Product[]> {
     const promises = ids.map(async (id) => await ProductAgent.get(id).get());
     const promisesResult = await Promise.all(promises);
-    const result: Product[] = promisesResult.filter((value) => value !== undefined);
-    return result;
+    return promisesResult.filter((value) => value !== undefined);
 }
 
 async function getLLMRecommendations(input: OrderItem[]): Promise<OrderItem[] | undefined> {
@@ -96,14 +95,17 @@ async function getLLMRecommendations(input: OrderItem[]): Promise<OrderItem[] | 
 
         llmResponse = cleanMarkdownJsonString(responseContent.trim())
     } catch (err) {
-        console.warn(`LLM recommend items - failed to get result: ${err}`)
+        const code: string = (err as any)?.code || 'N/A';
+        const message: string = (err as any)?.message || 'N/A';
+
+        console.warn(`LLM recommendations - failed to get result: ${code}, ${message}`)
     }
 
     if (llmResponse) {
         try {
             return JSON.parse(llmResponse);
         } catch (err) {
-            console.warn(`LLM recommend items - failed to parse LLM's result: ${llmResponse}: ${err}`)
+            console.warn(`LLM recommendations - failed to parse LLM's result: ${llmResponse}: ${err}`)
         }
     }
 
@@ -145,7 +147,7 @@ export class ShoppingAssistantAgent extends BaseAgent {
 
         const llmRecommendations = await getLLMRecommendations(currentItems);
 
-        if(llmRecommendations) {
+        if (llmRecommendations) {
             this.recommendedItems.productIds = llmRecommendations.map((value) => value.productId);
             this.recommendedItems.updatedAt = now();
             console.log("Recommend items for user: " + this.id + " - count: " + llmRecommendations.length);

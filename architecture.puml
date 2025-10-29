@@ -96,6 +96,12 @@ note right of product_search
   - No persistent state
 end note
 
+' External Services
+[AI/LLM Service] as llm #D6EAF8
+
+' Connect LLM to Shopping Assistant
+assistant --> llm : "API Call"
+
 note right of assistant
   <b>Shopping Assistant</b>
   - Provides AI-powered shopping assistance
