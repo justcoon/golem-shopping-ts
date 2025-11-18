@@ -7,6 +7,7 @@ import {arrayChunks} from "./common";
 import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
 import {ProductAgent, Product} from "./product";
 
+export const RECOMMENDATION_INPUT_COUNT = 100;
 export const RECOMMENDATION_COUNT = 4;
 
 export interface RecommendedItems {
@@ -34,7 +35,7 @@ function reduceOrderItems(items: OrderItem[]): OrderItem[] {
         }
     }
 
-    return Array.from(itemMap.values());
+    return Array.from(itemMap.values()).sort((a, b) => b.quantity - a.quantity).slice(0, RECOMMENDATION_INPUT_COUNT);
 }
 
 async function getOrderItems(id: string): Promise<OrderItem[]> {
@@ -67,7 +68,7 @@ async function getProducts(ids: string[]): Promise<Product[]> {
     return promisesResult.filter((value) => value !== undefined);
 }
 
-async function getLLMRecommendations(input: OrderItem[]): Promise<OrderItem[] | undefined> {
+async function getLLMRecommendations(input: OrderItem[]): Promise<string[] | undefined> {
     let llmResponse: string | undefined = undefined;
     try {
         const currentItemsString = JSON.stringify(input);
@@ -78,7 +79,7 @@ async function getLLMRecommendations(input: OrderItem[]): Promise<OrderItem[] | 
                     content: [{
                         tag: "text",
                         val: `We have a list of order items: ${currentItemsString}. 
-                        Can you do ${RECOMMENDATION_COUNT} recommendations for items to buy. Return them as a valid JSON array with same format as the input. Return JSON only.`
+                        Can you do ${RECOMMENDATION_COUNT} recommendations for items to buy. Return the list of productId-s as a valid JSON array. Return JSON only.`
                     }]
                 }
             }],
@@ -148,7 +149,7 @@ export class ShoppingAssistantAgent extends BaseAgent {
         const llmRecommendations = await getLLMRecommendations(currentItems);
 
         if (llmRecommendations) {
-            this.recommendedItems.productIds = llmRecommendations.map((value) => value.productId);
+            this.recommendedItems.productIds = llmRecommendations;
             this.recommendedItems.updatedAt = now();
             console.log("Recommend items for user: " + this.id + " - count: " + llmRecommendations.length);
             return true;
