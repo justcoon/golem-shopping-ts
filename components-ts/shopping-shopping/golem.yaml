@@ -52,6 +52,16 @@ httpApi:
               let result = agent.search(query);
               match result {  ok(x) => {status: 200u64, body: ok(x)}, err(x) => {status: 400u64, body: err({error: x})} }
         - method: GET
+          path: "/v1/product?{ids}"
+          binding:
+            type: default
+            componentName: shopping:shopping
+            response: |-
+              let ids: string = request.query.ids;
+              let agent = product-search-agent();
+              let result = agent.get-by-ids(ids);
+              match result {  ok(x) => {status: 200u64, body: ok(x)}, err(x) => {status: 400u64, body: err({error: x})} }
+        - method: GET
           path: "/v1/product/{product-id}"
           binding:
             type: default
@@ -208,6 +218,16 @@ httpApi:
               let id: string = request.path.user-id;
               let agent = shopping-assistant-agent(id);
               let result = agent.get-recommended-products();
+              {status: 200u64, body: result }
+        - method: GET
+          path: "/v1/assistant/{user-id}/recommended-items"
+          binding:
+            type: default
+            componentName: shopping:shopping
+            response: |-
+              let id: string = request.path.user-id;
+              let agent = shopping-assistant-agent(id);
+              let result = agent.get-recommended-items();
               {status: 200u64, body: result }
 
   deployments:

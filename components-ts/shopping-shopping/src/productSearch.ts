@@ -8,7 +8,7 @@ import {
     Result
 } from '@golemcloud/golem-ts-sdk';
 import {Product, ProductAgent} from "./product";
-import {parseAgentId} from "golem:agent/host";
+import {ComponentId, parseAgentId} from "golem:agent/host";
 import {arrayChunks} from "./common";
 
 const AGENT_FILTER: AgentAnyFilter = {
@@ -30,6 +30,7 @@ function getProductAgentId(agentName: string): string | undefined {
     const match = agentName.match(/^product-agent\("([^"]+)"\)$/);
     return match ? match[1] : undefined;
 }
+
 class ProductQueryMatcher {
     private terms: string[];
     private fieldFilters: Map<string, string>;
@@ -90,12 +91,20 @@ class ProductQueryMatcher {
         return text.toLowerCase().includes(query.toLowerCase());
     }
 
+    private valueMatches(text: string, query: string): boolean {
+        if (query === '*') return true;
+        return text === query;
+    }
+
     public matches(product: Product): boolean {
         // Check field filters first
         for (const [field, value] of this.fieldFilters.entries()) {
             let matches = false;
 
             switch (field) {
+                case 'productid':
+                    matches = this.valueMatches(product.productId, value);
+                    break;
                 case 'name':
                     matches = this.textMatches(product.name, value);
                     break;
@@ -140,23 +149,54 @@ class ProductQueryMatcher {
 
 @agent()
 export class ProductSearchAgent extends BaseAgent {
+    private readonly componentId: ComponentId | undefined;
+
     constructor() {
         super()
+        this.componentId = resolveComponentId("shopping:shopping");
+    }
+
+    @prompt("Get products by ids")
+    async getByIds(ids: string): Promise<Result<Product[], string>> {
+        if (this.componentId) {
+            const productIds = ids.split(",").map((id) => id.trim());
+            console.log("Get products - ids: (" + productIds + ")");
+            const result: Product[] = [];
+
+            if (productIds.length > 0) {
+                const idsChunks = arrayChunks(productIds, 5);
+
+                for (const ids of idsChunks) {
+                    console.log("Get products - ids: (" + ids + ")");
+                    const promises = ids.map(async (id) => await ProductAgent.get(id).get());
+                    const promisesResult = await Promise.all(promises);
+                    console.log("Get products - ids: (" + ids + ") fetched: " + promisesResult.length);
+
+                    for (const value of promisesResult) {
+                        if (value) {
+                            result.push(value);
+                        }
+                    }
+                }
+            }
+
+            return Result.ok(result);
+        } else {
+            return Result.err("Component not found");
+        }
     }
 
     @prompt("Search products")
     async search(query: string): Promise<Result<Product[], string>> {
-        const componentId = resolveComponentId("shopping:shopping");
-        if (componentId) {
+        if (this.componentId) {
             console.log("Search products - query: " + query);
             const matcher = new ProductQueryMatcher(query);
 
             const result: Product[] = [];
             const processedIds = new Set<string>();
 
-            const getter = new GetAgents(componentId, AGENT_FILTER, true);
+            const getter = new GetAgents(this.componentId, AGENT_FILTER, true);
             let agents = await getter.getNext();
-
 
             while (agents && agents.length > 0) {
 

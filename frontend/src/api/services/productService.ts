@@ -88,12 +88,41 @@ export const getProductById = async (
   }
 };
 
+
 // Helper to get a product with pricing (alias for backward compatibility)
 // Get product with pricing (with optional currency and zone filters)
 export const getProductWithPricing = (
   productId: string,
   options?: PriceFilterOptions,
 ): Promise<Product> => getProductById(productId, true, options);
+
+// export const getProductsByIds = async (
+//     productIds: string[],
+//     options?: PriceFilterOptions,
+// ): Promise<Product[]> => {
+//     const ids = productIds.join(",");
+//     try {
+//         const response = await apiClient.get(`/v1/product?ids=${ids}`);
+//         const products: Product[] = response.ok;
+//
+//         // Get pricing for all products in batch
+//         const productIds = products.map((p) => p["product-id"]);
+//         const pricingMap = await getBatchPricing(productIds);
+//
+//         // Merge products with their pricing
+//         return products.map((product) => {
+//             const pricing = pricingMap[product["product-id"]];
+//             return {
+//                 ...product,
+//                 pricing,
+//                 bestPrice: pricing ? getBestPrice(pricing, options) : undefined,
+//             };
+//         });
+//     } catch (error) {
+//         console.error(`Error fetching product ${ids}:`, error);
+//         throw error;
+//     }
+// };
 
 // Get multiple products by IDs with their pricing
 export const getProductsByIds = async (
