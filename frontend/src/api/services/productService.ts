@@ -102,17 +102,38 @@ export const getProductsByIds = async (
     options?: PriceFilterOptions,
 ): Promise<Product[]> => {
   try {
-    // First get all products
-    const productsResponse = await Promise.all(
-        productIds.map((id) => getProductById(id, false)),
+    // Get all products, handling individual failures
+    const productPromises = productIds.map(id =>
+        getProductById(id, false)
+            .then(product => ({ success: true, product }))
+            .catch(error => {
+              console.warn(`Failed to fetch product ${id}:`, error.message);
+              return { success: false, id, error };
+            })
     );
 
-    // Then get all pricing in a single batch request
-    const pricingMap = await getBatchPricing(productIds);
+    const results = await Promise.all(productPromises);
+
+    // Filter out failed fetches and extract successful products
+    const validProducts = results
+        .filter((result): result is { success: true; product: Product } => result.success)
+        .map(result => result.product);
+
+    if (validProducts.length === 0) {
+      console.warn('No products were successfully fetched');
+      return [];
+    }
+
+    // Get pricing only for successfully fetched products
+    const validProductIds = validProducts.map(p => p["product-id"]);
+    const pricingMap = await getBatchPricing(validProductIds).catch(error => {
+      console.warn('Failed to fetch batch pricing, continuing without pricing', error);
+      return {}; // Return empty pricing map if batch pricing fails
+    });
 
     // Merge products with their pricing
     const result: Record<string, Product> = {};
-    productsResponse.forEach((product) => {
+    validProducts.forEach((product) => {
       const pricing = pricingMap[product["product-id"]];
       result[product["product-id"]] = {
         ...product,
@@ -123,8 +144,8 @@ export const getProductsByIds = async (
 
     return Object.values(result);
   } catch (error) {
-    console.error("Error fetching products by IDs:", error);
-    throw error;
+    console.error('Unexpected error in getProductsByIds:', error);
+    throw error; // Re-throw for the caller to handle
   }
 };
 
