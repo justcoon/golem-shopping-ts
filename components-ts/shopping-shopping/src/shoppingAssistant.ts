@@ -5,7 +5,6 @@ import {CartAgent} from "./cart";
 import {OrderAgent, OrderItem} from "./order";
 import {arrayChunks} from "./common";
 import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
-import {ProductAgent, Product} from "./product";
 
 export const RECOMMENDATION_INPUT_COUNT = 100;
 export const RECOMMENDATION_PRODUCT_COUNT = 4;
@@ -67,12 +66,6 @@ async function getOrderItems(id: string): Promise<OrderItem[]> {
         }
     }
     return reduceOrderItems(result);
-}
-
-async function getProducts(ids: string[]): Promise<Product[]> {
-    const promises = ids.map(async (id) => await ProductAgent.get(id).get());
-    const promisesResult = await Promise.all(promises);
-    return promisesResult.filter((value) => value !== undefined);
 }
 
 async function getLLMRecommendations(input: OrderItem[]): Promise<LLMRecommendations | undefined> {
@@ -168,12 +161,6 @@ export class ShoppingAssistantAgent extends BaseAgent {
             createdAt: date,
             updatedAt: date,
         };
-    }
-
-    @prompt("Get recommended items")
-    async getRecommendedProducts(): Promise<Product[]> {
-        const products = await getProducts(this.recommendedItems.productIds);
-        return products;
     }
 
     @prompt("Get recommended items state")

@@ -147,7 +147,7 @@ class ProductQueryMatcher {
     }
 }
 
-@agent()
+@agent({ mode: "ephemeral" })
 export class ProductSearchAgent extends BaseAgent {
     private readonly componentId: ComponentId | undefined;
 

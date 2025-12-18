@@ -96,43 +96,15 @@ export const getProductWithPricing = (
   options?: PriceFilterOptions,
 ): Promise<Product> => getProductById(productId, true, options);
 
-// export const getProductsByIds = async (
-//     productIds: string[],
-//     options?: PriceFilterOptions,
-// ): Promise<Product[]> => {
-//     const ids = productIds.join(",");
-//     try {
-//         const response = await apiClient.get(`/v1/product?ids=${ids}`);
-//         const products: Product[] = response.ok;
-//
-//         // Get pricing for all products in batch
-//         const productIds = products.map((p) => p["product-id"]);
-//         const pricingMap = await getBatchPricing(productIds);
-//
-//         // Merge products with their pricing
-//         return products.map((product) => {
-//             const pricing = pricingMap[product["product-id"]];
-//             return {
-//                 ...product,
-//                 pricing,
-//                 bestPrice: pricing ? getBestPrice(pricing, options) : undefined,
-//             };
-//         });
-//     } catch (error) {
-//         console.error(`Error fetching product ${ids}:`, error);
-//         throw error;
-//     }
-// };
-
 // Get multiple products by IDs with their pricing
 export const getProductsByIds = async (
-  productIds: string[],
-  options?: PriceFilterOptions,
-): Promise<Record<string, Product>> => {
+    productIds: string[],
+    options?: PriceFilterOptions,
+): Promise<Product[]> => {
   try {
     // First get all products
     const productsResponse = await Promise.all(
-      productIds.map((id) => getProductById(id, false)),
+        productIds.map((id) => getProductById(id, false)),
     );
 
     // Then get all pricing in a single batch request
@@ -149,7 +121,7 @@ export const getProductsByIds = async (
       };
     });
 
-    return result;
+    return Object.values(result);
   } catch (error) {
     console.error("Error fetching products by IDs:", error);
     throw error;
