@@ -7,7 +7,7 @@
     "components-ts/*/*"
   ],
   "dependencies": {
-    "@golemcloud/golem-ts-sdk": "0.0.58",
+    "@golemcloud/golem-ts-sdk": "0.0.72",
     "uuid": "^13.0.0"
   },
   "devDependencies": {

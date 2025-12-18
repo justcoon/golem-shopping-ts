@@ -1,6 +1,6 @@
 # golem-shopping-ts
 
-This is a demo of a shopping app using Golem 1.3.
+This is a demo of a shopping app using Golem 1.4.
 
 ## Agents
 
@@ -26,12 +26,10 @@ To view or edit this diagram, see the `architecture.puml` file in the project ro
 ## Quick Start
 
 1. **Prerequisites**:
-    - Install [Golem CLI](https://learn.golem.cloud/cli) (version 1.3.1)
+    - Install [Golem CLI](https://learn.golem.cloud/cli) (version 1.4.0+)
     - [Running Golem Environment](https://learn.golem.cloud/quickstart#running-golem)
 
    See [Golem Quickstart](https://learn.golem.cloud/quickstart) for more information.
-
-   **Note**: This project was developed and tested with Golem v1.3.1. For best results, please use this version.
 
 
 2. **Build and Deploy**:

@@ -256,7 +256,7 @@ export class OrderAgent extends BaseAgent {
             if (value.orderStatus == OrderStatus.new) {
                 let item = value.items.find(item => item.productId === productId);
                 if (item) {
-                    item.quantity = quantity;
+                    item.quantity += quantity;
                     return Result.ok(true);
                 } else {
                     let product = await ProductAgent.get(productId).get();

@@ -207,7 +207,7 @@ export class CartAgent extends BaseAgent {
         return this.updateValue(async (value) => {
             let item = value.items.find(item => item.productId === productId);
             if (item) {
-                item.quantity = quantity;
+                item.quantity += quantity;
                 return Result.ok(true);
             } else {
                 let product = await ProductAgent.get(productId).get();
