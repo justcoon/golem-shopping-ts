@@ -9,7 +9,7 @@ export interface Address {
 }
 
 export const CURRENCY = "USD";
-export const PRICING_ZONE_DEFAULT = "global";
+export const PRICING_REGION_DEFAULT = "global";
 
 export function arrayChunks<T>(array: T[], chunkSize: number): T[][] {
     const chunks: T[][] = [];
