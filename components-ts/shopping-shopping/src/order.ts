@@ -5,7 +5,7 @@ import {
     Result
 } from '@golemcloud/golem-ts-sdk';
 import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
-import {Address, CURRENCY, PRICING_ZONE_DEFAULT} from "./common";
+import {Address, CURRENCY, PRICING_REGION_DEFAULT} from "./common";
 import {ProductAgent} from "./product";
 import {PricingAgent} from "./pricing";
 
@@ -260,7 +260,7 @@ export class OrderAgent extends BaseAgent {
                     return Result.ok(true);
                 } else {
                     let product = await ProductAgent.get(productId).get();
-                    let pricing = await PricingAgent.get(productId).getPrice(value.currency, PRICING_ZONE_DEFAULT);
+                    let pricing = await PricingAgent.get(productId).getPrice(value.currency, PRICING_REGION_DEFAULT);
 
                     if (!product) {
                         return Result.err(AddItemError.productNotFound({

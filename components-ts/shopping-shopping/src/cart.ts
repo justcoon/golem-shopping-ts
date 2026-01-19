@@ -6,7 +6,7 @@ import {
 } from '@golemcloud/golem-ts-sdk';
 import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
 import {v4 as uuidv4} from 'uuid';
-import {Address, CURRENCY, PRICING_ZONE_DEFAULT} from "./common";
+import {Address, CURRENCY, PRICING_REGION_DEFAULT} from "./common";
 import {ProductAgent} from "./product";
 import {PricingAgent} from "./pricing";
 import {OrderAgent} from "./order";
@@ -211,7 +211,7 @@ export class CartAgent extends BaseAgent {
                 return Result.ok(true);
             } else {
                 let product = await ProductAgent.get(productId).get();
-                let pricing = await PricingAgent.get(productId).getPrice(value.currency, PRICING_ZONE_DEFAULT);
+                let pricing = await PricingAgent.get(productId).getPrice(value.currency, PRICING_REGION_DEFAULT);
 
                 if (!product) {
                     return Result.err(AddItemError.productNotFound({
@@ -371,7 +371,7 @@ export class CartAgent extends BaseAgent {
             const newItems: CartItem[] = [];
             for (const item of this.value.items) {
                 let product = await ProductAgent.get(item.productId).get();
-                let pricing = await PricingAgent.get(item.productId).getPrice(this.value.currency, PRICING_ZONE_DEFAULT);
+                let pricing = await PricingAgent.get(item.productId).getPrice(this.value.currency, PRICING_REGION_DEFAULT);
 
                 if (product && pricing) {
                     newItems.push({

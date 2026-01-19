@@ -13,18 +13,15 @@ on:
         description: Golem version
         type: choice
         required: false
-        default: 1.4.0
+        default: 1.4.2
         options:
           - latest
           - master
-          - 1.4.0
+          - 1.4.2
 
 env:
   CARGO_TERM_COLOR: always
-  GOLEM_VERSION: ${{ github.event.inputs.golemversion != '' && github.event.inputs.golemversion || '1.4.0' }}
-
-# https://github.com/golemcloud/golem/releases/download/v1.4.0/golem-cli-x86_64-unknown-linux-gnu
-# https://github.com/golemcloud/golem/releases/download/v1.4.0/golem-x86_64-unknown-linux-gnu
+  GOLEM_VERSION: ${{ github.event.inputs.golemversion != '' && github.event.inputs.golemversion || '1.4.2' }}
 
 jobs:
   setup-environment:
