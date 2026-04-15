@@ -5,10 +5,10 @@ import {
     GetAgents,
     resolveComponentId,
     AgentAnyFilter,
-    Result
+    Result, ComponentId
 } from '@golemcloud/golem-ts-sdk';
 import {Product, ProductAgent} from "./product";
-import {ComponentId, parseAgentId} from "golem:agent/host";
+// import {ComponentId, parseAgentId} from "golem:agent/host";
 import {arrayChunks} from "./common";
 
 const AGENT_FILTER: AgentAnyFilter = {

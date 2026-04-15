@@ -1,6 +1,6 @@
 import {agent, BaseAgent, prompt} from "@golemcloud/golem-ts-sdk";
 
-import * as llm from 'golem:llm/llm@1.0.0';
+// import * as llm from 'golem:llm/llm@1.0.0';
 import {CartAgent} from "./cart";
 import {OrderAgent, OrderItem} from "./order";
 import {arrayChunks} from "./common";
@@ -69,80 +69,80 @@ async function getOrderItems(id: string): Promise<OrderItem[]> {
 }
 
 async function getLLMRecommendations(input: OrderItem[]): Promise<LLMRecommendations | undefined> {
-    let llmResponse: string | undefined = undefined;
-    try {
-        const currentItemsString = JSON.stringify(input);
-
-        let response = llm.send(
-            [
-                {
-                    tag: "message",
-                    val: {
-                        role: "system",
-                        content: [{
-                            tag: "text",
-                            val: `You MUST respond with JSON in the following schema:
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                    "productBrands": {
-                                        "type": "array",
-                                            "items": {"type": "string"}
-                                    },
-                                    "productIds": {
-                                        "type": "array",
-                                            "items": {"type": "string"}
-                                    }
-                                },
-                                    "required": ["productBrands", "productIds"],
-                                    "additionalProperties": false
-                                }
-                        
-                                Return ONLY valid JSON, no other text.`
-                        }]
-                    }
-                },
-                {
-                    tag: "message",
-                    val: {
-                        role: "user",
-                        content: [{
-                            tag: "text",
-                            val: `We have a list of order items: ${currentItemsString}. 
-                           Can you do ${RECOMMENDATION_PRODUCT_COUNT} recommendations for products items to buy based on previous order items.
-                           Can you do ${RECOMMENDATION_BRAND_COUNT} recommendations for product brands to buy based on previous order items. 
-                           Return the list of productId-s and list of productBrand-s as a valid JSON object. Return JSON only.`
-                        }]
-                    }
-                }
-            ],
-            {
-                model: "tngtech/deepseek-r1t2-chimera:free",
-                providerOptions: [{
-                    key: "responseFormat",
-                    value: "json_object"
-                }]
-            }
-        );
-        const responseContent =
-            response.content.filter(c => c.tag === "text").map(c => c.val).join();
-
-        llmResponse = cleanMarkdownJsonString(responseContent.trim())
-    } catch (err) {
-        const code: string = (err as any)?.code || 'N/A';
-        const message: string = (err as any)?.message || 'N/A';
-
-        console.warn(`LLM recommendations - failed to get result: ${code}, ${message}`)
-    }
-
-    if (llmResponse) {
-        try {
-            return JSON.parse(llmResponse);
-        } catch (err) {
-            console.warn(`LLM recommendations - failed to parse LLM's result: ${llmResponse}: ${err}`)
-        }
-    }
-
+    // let llmResponse: string | undefined = undefined;
+    // try {
+    //     const currentItemsString = JSON.stringify(input);
+    //
+    //     let response = llm.send(
+    //         [
+    //             {
+    //                 tag: "message",
+    //                 val: {
+    //                     role: "system",
+    //                     content: [{
+    //                         tag: "text",
+    //                         val: `You MUST respond with JSON in the following schema:
+    //                             {
+    //                                 "type": "object",
+    //                                 "properties": {
+    //                                 "productBrands": {
+    //                                     "type": "array",
+    //                                         "items": {"type": "string"}
+    //                                 },
+    //                                 "productIds": {
+    //                                     "type": "array",
+    //                                         "items": {"type": "string"}
+    //                                 }
+    //                             },
+    //                                 "required": ["productBrands", "productIds"],
+    //                                 "additionalProperties": false
+    //                             }
+    //
+    //                             Return ONLY valid JSON, no other text.`
+    //                     }]
+    //                 }
+    //             },
+    //             {
+    //                 tag: "message",
+    //                 val: {
+    //                     role: "user",
+    //                     content: [{
+    //                         tag: "text",
+    //                         val: `We have a list of order items: ${currentItemsString}.
+    //                        Can you do ${RECOMMENDATION_PRODUCT_COUNT} recommendations for products items to buy based on previous order items.
+    //                        Can you do ${RECOMMENDATION_BRAND_COUNT} recommendations for product brands to buy based on previous order items.
+    //                        Return the list of productId-s and list of productBrand-s as a valid JSON object. Return JSON only.`
+    //                     }]
+    //                 }
+    //             }
+    //         ],
+    //         {
+    //             model: "tngtech/deepseek-r1t2-chimera:free",
+    //             providerOptions: [{
+    //                 key: "responseFormat",
+    //                 value: "json_object"
+    //             }]
+    //         }
+    //     );
+    //     const responseContent =
+    //         response.content.filter(c => c.tag === "text").map(c => c.val).join();
+    //
+    //     llmResponse = cleanMarkdownJsonString(responseContent.trim())
+    // } catch (err) {
+    //     const code: string = (err as any)?.code || 'N/A';
+    //     const message: string = (err as any)?.message || 'N/A';
+    //
+    //     console.warn(`LLM recommendations - failed to get result: ${code}, ${message}`)
+    // }
+    //
+    // if (llmResponse) {
+    //     try {
+    //         return JSON.parse(llmResponse);
+    //     } catch (err) {
+    //         console.warn(`LLM recommendations - failed to parse LLM's result: ${llmResponse}: ${err}`)
+    //     }
+    // }
+    //
     return undefined
 }
 
