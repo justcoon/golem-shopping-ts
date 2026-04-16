@@ -1,4 +1,4 @@
-import {agent, BaseAgent, prompt} from "@golemcloud/golem-ts-sdk";
+import {agent, BaseAgent, endpoint, prompt} from "@golemcloud/golem-ts-sdk";
 
 // import * as llm from 'golem:llm/llm@1.0.0';
 import {CartAgent} from "./cart";
@@ -146,7 +146,9 @@ async function getLLMRecommendations(input: OrderItem[]): Promise<LLMRecommendat
     return undefined
 }
 
-@agent()
+@agent({
+    mount: '/v1/assistant/{id}'
+})
 export class ShoppingAssistantAgent extends BaseAgent {
     private readonly id: string;
     private recommendedItems: RecommendedItems;
@@ -163,6 +165,7 @@ export class ShoppingAssistantAgent extends BaseAgent {
         };
     }
 
+    @endpoint({ get: '/recommended-items' })
     @prompt("Get recommended items state")
     async getRecommendedItems(): Promise<RecommendedItems> {
         return this.recommendedItems

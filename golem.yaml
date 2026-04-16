@@ -36,8 +36,9 @@ httpApi:
     local:
     - domain: localhost:9006
       agents:
-        CounterAgent: {}
-        WorkflowAgent: {}
-        HumanAgent: {}
-        TaskAgent: {}
-        CounterWithSnapshotAgent: {}
+        PricingAgent: {}
+        ProductAgent: {}
+        ProductSearchAgent: {}
+        ShoppingAssistantAgent: {}
+        CartAgent: {}
+        OrderAgent: {}

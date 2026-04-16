@@ -1,6 +1,7 @@
 import {
     BaseAgent,
     agent,
+    endpoint,
     prompt,
 } from '@golemcloud/golem-ts-sdk';
 import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
@@ -14,6 +15,12 @@ export interface PricingItem {
 export interface SalePricingItem extends PricingItem {
     start?: Datetime;
     end?: Datetime;
+}
+
+export interface PricingRequest {
+    msrpPrices: PricingItem[];
+    listPrices: PricingItem[];
+    salePrices: SalePricingItem[];
 }
 
 export interface Pricing {
@@ -52,7 +59,9 @@ export const mergeSalePricingItems = (first: SalePricingItem[], second: SalePric
     return Array.from(map.values())
 }
 
-@agent()
+@agent({
+    mount: '/v1/pricing/{id}'
+})
 export class PricingAgent extends BaseAgent {
     private readonly productId: string;
     private value: Pricing | undefined = undefined;
@@ -62,25 +71,27 @@ export class PricingAgent extends BaseAgent {
         this.productId = id;
     }
 
+    @endpoint({ post: '/' })
     @prompt("Initialize pricing")
-    async initializePricing(msrpPrices: PricingItem[], listPrices: PricingItem[], salePrices: SalePricingItem[]) {
+    async initializePricing(request: PricingRequest) {
         let date = now();
         this.value = {
             productId: this.productId,
-            msrpPrices: msrpPrices,
-            listPrices: listPrices,
-            salePrices: salePrices,
+            msrpPrices: request.msrpPrices,
+            listPrices: request.listPrices,
+            salePrices: request.salePrices,
             createdAt: date,
             updatedAt: date
         }
     }
 
+    @endpoint({ put: '/' })
     @prompt("Update pricing")
-    async updatePricing(msrpPrices: PricingItem[], listPrices: PricingItem[], salePrices: SalePricingItem[]) {
+    async updatePricing(request: PricingRequest) {
         if (this.value) {
-            this.value.msrpPrices = mergePricingItems(this.value.msrpPrices, msrpPrices);
-            this.value.listPrices = mergePricingItems(this.value.listPrices, listPrices);
-            this.value.salePrices = mergeSalePricingItems(this.value.salePrices, salePrices);
+            this.value.msrpPrices = mergePricingItems(this.value.msrpPrices, request.msrpPrices);
+            this.value.listPrices = mergePricingItems(this.value.listPrices, request.listPrices);
+            this.value.salePrices = mergeSalePricingItems(this.value.salePrices, request.salePrices);
             this.value.updatedAt = now();
         }
     }
@@ -100,6 +111,7 @@ export class PricingAgent extends BaseAgent {
         }
     }
 
+    @endpoint({ get: '/' })
     @prompt("Get pricing")
     async get(): Promise<Pricing | undefined> {
         return this.value;

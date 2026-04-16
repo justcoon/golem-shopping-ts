@@ -1,6 +1,7 @@
 import {
     BaseAgent,
     agent,
+    endpoint,
     prompt,
     Result,
 } from '@golemcloud/golem-ts-sdk';
@@ -156,6 +157,14 @@ export interface Cart {
     updatedAt: Datetime
 }
 
+export interface AddItemRequest {
+    quantity: number;
+}
+
+export interface UpdateEmailRequest {
+    email: string;
+}
+
 export interface OrderConfirmation {
     orderId: string;
 }
@@ -176,7 +185,9 @@ export type UpdateEmailResult = Result<boolean, UpdateEmailError>
 export type CheckoutResult = Result<OrderConfirmation, CheckoutError>
 
 
-@agent()
+@agent({
+    mount: '/v1/cart/{id}'
+})
 export class CartAgent extends BaseAgent {
     private readonly userId: string;
     private readonly updateInGet: boolean;
@@ -202,12 +213,13 @@ export class CartAgent extends BaseAgent {
         return fn(this.value)
     }
 
+    @endpoint({ put: '/items/{productId}' })
     @prompt("Add item to cart")
-    async addItem(productId: string, quantity: number): Promise<AddItemResult> {
+    async addItem(productId: string, request: AddItemRequest): Promise<AddItemResult> {
         return this.updateValue(async (value) => {
             let item = value.items.find(item => item.productId === productId);
             if (item) {
-                item.quantity += quantity;
+                item.quantity += request.quantity;
                 return Result.ok(true);
             } else {
                 let product = await ProductAgent.get(productId).get();
@@ -229,7 +241,7 @@ export class CartAgent extends BaseAgent {
                         productName: product.name,
                         productBrand: product.brand,
                         price: pricing.price,
-                        quantity
+                        quantity: request.quantity
                     });
                     value.total = getItemsTotalPrice(value.items);
                     value.updatedAt = now();
@@ -257,6 +269,7 @@ export class CartAgent extends BaseAgent {
         });
     }
 
+    @endpoint({ delete: '/items/{productId}' })
     @prompt("Remove item from cart")
     async removeItem(productId: string): Promise<RemoveItemResult> {
         return this.updateValue(async (value) => {
@@ -275,6 +288,7 @@ export class CartAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ put: '/billing-address' })
     @prompt("Update billing address in cart")
     async updateBillingAddress(address: Address): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
@@ -284,6 +298,7 @@ export class CartAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ put: '/shipping-address' })
     @prompt("Update shipping address in cart")
     async updateShippingAddress(address: Address): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
@@ -293,15 +308,17 @@ export class CartAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ put: '/email' })
     @prompt("Update email in cart")
-    async updateEmail(email: string): Promise<UpdateEmailResult> {
+    async updateEmail(request: UpdateEmailRequest): Promise<UpdateEmailResult> {
         return this.updateValue(async (value) => {
-            value.email = email;
+            value.email = request.email;
             value.updatedAt = now();
             return Result.ok(true);
         })
     }
 
+    @endpoint({ post: '/checkout' })
     @prompt("Checkout cart")
     async checkout(): Promise<CheckoutResult> {
         return this.updateValue(async (value) => {
@@ -365,6 +382,7 @@ export class CartAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ get: '/' })
     @prompt("Get cart")
     async get(): Promise<Cart | undefined> {
         if (this.value && this.updateInGet && this.value.items.length > 0) {

@@ -1,6 +1,7 @@
 import {
     BaseAgent,
     agent,
+    endpoint,
     prompt,
     Result
 } from '@golemcloud/golem-ts-sdk';
@@ -176,6 +177,14 @@ export enum OrderStatus {
     cancelled = "cancelled",
 }
 
+export interface AddItemRequest {
+    quantity: number;
+}
+
+export interface UpdateEmailRequest {
+    email: string;
+}
+
 export interface CreateOrder {
     userId: string;
     items: OrderItem[];
@@ -200,7 +209,9 @@ export type RemoveItemResult = Result<boolean, RemoveItemError>
 export type UpdateAddressResult = Result<boolean, UpdateAddressError>
 export type UpdateEmailResult = Result<boolean, UpdateEmailError>
 
-@agent()
+@agent({
+    mount: '/v1/order/{id}'
+})
 export class OrderAgent extends BaseAgent {
     private readonly orderId: string;
     private value: Order | undefined = undefined;
@@ -250,13 +261,14 @@ export class OrderAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ put: '/items/{productId}' })
     @prompt("Add item to order")
-    async addItem(productId: string, quantity: number): Promise<AddItemResult> {
+    async addItem(productId: string, request: AddItemRequest): Promise<AddItemResult> {
         return this.updateValue(async (value) => {
             if (value.orderStatus == OrderStatus.new) {
                 let item = value.items.find(item => item.productId === productId);
                 if (item) {
-                    item.quantity += quantity;
+                    item.quantity += request.quantity;
                     return Result.ok(true);
                 } else {
                     let product = await ProductAgent.get(productId).get();
@@ -278,7 +290,7 @@ export class OrderAgent extends BaseAgent {
                             productName: product.name,
                             productBrand: product.brand,
                             price: pricing.price,
-                            quantity
+                            quantity: request.quantity
                         });
                         value.total = getItemsTotalPrice(value.items);
                         value.updatedAt = now();
@@ -313,6 +325,7 @@ export class OrderAgent extends BaseAgent {
         });
     }
 
+    @endpoint({ delete: '/items/{productId}' })
     @prompt("Remove item from order")
     async removeItem(productId: string): Promise<RemoveItemResult> {
         return this.updateValue(async (value) => {
@@ -335,6 +348,7 @@ export class OrderAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ put: '/billing-address' })
     @prompt("Update billing address in order")
     async updateBillingAddress(address: Address): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
@@ -348,6 +362,7 @@ export class OrderAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ put: '/shipping-address' })
     @prompt("Update shipping address in order")
     async updateShippingAddress(address: Address): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
@@ -361,11 +376,12 @@ export class OrderAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ put: '/email' })
     @prompt("Update email in order")
-    async updateEmail(email: string): Promise<UpdateEmailResult> {
+    async updateEmail(request: UpdateEmailRequest): Promise<UpdateEmailResult> {
         return this.updateValue(async (value) => {
             if (value.orderStatus == OrderStatus.new) {
-                value.email = email;
+                value.email = request.email;
                 value.updatedAt = now();
                 return Result.ok(true);
             } else {
@@ -374,6 +390,7 @@ export class OrderAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ post: '/cancel-order' })
     @prompt("Cancel order")
     async cancelOrder(): Promise<CancelOrderResult> {
         return this.updateValue(async (value) => {
@@ -387,6 +404,7 @@ export class OrderAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ post: '/ship-order' })
     @prompt("Ship order")
     async shipOrder(): Promise<ShipOrderResult> {
         return this.updateValue(async (value) => {
@@ -400,6 +418,7 @@ export class OrderAgent extends BaseAgent {
         })
     }
 
+    @endpoint({ get: '/' })
     @prompt("Get order")
     async get(): Promise<Order | undefined> {
         return this.value;

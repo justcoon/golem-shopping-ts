@@ -1,6 +1,7 @@
 import {
     BaseAgent,
     agent,
+    endpoint,
     prompt,
     GetAgents,
     resolveComponentId,
@@ -147,7 +148,10 @@ class ProductQueryMatcher {
     }
 }
 
-@agent({ mode: "ephemeral" })
+@agent({ 
+    mount: '/v1/product',
+    mode: "ephemeral" 
+})
 export class ProductSearchAgent extends BaseAgent {
     private readonly componentId: ComponentId | undefined;
 
@@ -156,6 +160,7 @@ export class ProductSearchAgent extends BaseAgent {
         this.componentId = resolveComponentId("shopping:shopping");
     }
 
+    @endpoint({ get: '/?{ids}' })
     @prompt("Get products by ids")
     async getByIds(ids: string): Promise<Result<Product[], string>> {
         if (this.componentId) {
@@ -186,6 +191,7 @@ export class ProductSearchAgent extends BaseAgent {
         }
     }
 
+    @endpoint({ get: '/search?{query}' })
     @prompt("Search products")
     async search(query: string): Promise<Result<Product[], string>> {
         if (this.componentId) {
