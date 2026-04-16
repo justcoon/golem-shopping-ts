@@ -160,7 +160,7 @@ export class ProductSearchAgent extends BaseAgent {
         this.componentId = resolveComponentId("shopping:shopping");
     }
 
-    @endpoint({ get: '/?{ids}' })
+    @endpoint({ get: '/?ids={ids}' })
     @prompt("Get products by ids")
     async getByIds(ids: string): Promise<Result<Product[], string>> {
         if (this.componentId) {
@@ -191,7 +191,7 @@ export class ProductSearchAgent extends BaseAgent {
         }
     }
 
-    @endpoint({ get: '/search?{query}' })
+    @endpoint({ get: '/search?query={query}' })
     @prompt("Search products")
     async search(query: string): Promise<Result<Product[], string>> {
         if (this.componentId) {
