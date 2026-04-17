@@ -6,13 +6,6 @@ import {
 } from '@golemcloud/golem-ts-sdk';
 import {Datetime, now} from "wasi:clocks/wall-clock@0.2.3";
 
-export interface ProductRequest {
-    name: string;
-    brand: string;
-    description: string;
-    tags: string[];
-}
-
 export interface Product {
     productId: string;
     name: string;
@@ -35,22 +28,25 @@ export class ProductAgent extends BaseAgent {
         this.productId = id;
     }
 
-    @endpoint({ post: '/' })
+    @endpoint({post: '/'})
     @prompt("Initialize product")
-    async initializeProduct(request: ProductRequest) {
+    async initializeProduct(name: string,
+                            brand: string,
+                            description: string,
+                            tags: string[]) {
         let date = now();
         this.value = {
             productId: this.productId,
-            name: request.name,
-            brand: request.brand,
-            description: request.description,
-            tags: request.tags,
+            name: name,
+            brand: brand,
+            description: description,
+            tags: tags,
             createdAt: date,
             updatedAt: date
         };
     }
 
-    @endpoint({ get: '/' })
+    @endpoint({get: '/'})
     @prompt("Get product")
     async get(): Promise<Product | undefined> {
         return this.value;

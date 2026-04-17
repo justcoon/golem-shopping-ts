@@ -157,13 +157,7 @@ export interface Cart {
     updatedAt: Datetime
 }
 
-export interface AddItemRequest {
-    quantity: number;
-}
 
-export interface UpdateEmailRequest {
-    email: string;
-}
 
 export interface OrderConfirmation {
     orderId: string;
@@ -215,11 +209,11 @@ export class CartAgent extends BaseAgent {
 
     @endpoint({ put: '/items/{productId}' })
     @prompt("Add item to cart")
-    async addItem(productId: string, request: AddItemRequest): Promise<AddItemResult> {
+    async addItem(productId: string, quantity: number): Promise<AddItemResult> {
         return this.updateValue(async (value) => {
             let item = value.items.find(item => item.productId === productId);
             if (item) {
-                item.quantity += request.quantity;
+                item.quantity += quantity;
                 return Result.ok(true);
             } else {
                 let product = await ProductAgent.get(productId).get();
@@ -241,7 +235,7 @@ export class CartAgent extends BaseAgent {
                         productName: product.name,
                         productBrand: product.brand,
                         price: pricing.price,
-                        quantity: request.quantity
+                        quantity: quantity
                     });
                     value.total = getItemsTotalPrice(value.items);
                     value.updatedAt = now();
@@ -310,9 +304,9 @@ export class CartAgent extends BaseAgent {
 
     @endpoint({ put: '/email' })
     @prompt("Update email in cart")
-    async updateEmail(request: UpdateEmailRequest): Promise<UpdateEmailResult> {
+    async updateEmail(email: string): Promise<UpdateEmailResult> {
         return this.updateValue(async (value) => {
-            value.email = request.email;
+            value.email = email;
             value.updatedAt = now();
             return Result.ok(true);
         })

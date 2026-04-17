@@ -177,13 +177,7 @@ export enum OrderStatus {
     cancelled = "cancelled",
 }
 
-export interface AddItemRequest {
-    quantity: number;
-}
 
-export interface UpdateEmailRequest {
-    email: string;
-}
 
 export interface CreateOrder {
     userId: string;
@@ -263,12 +257,12 @@ export class OrderAgent extends BaseAgent {
 
     @endpoint({ put: '/items/{productId}' })
     @prompt("Add item to order")
-    async addItem(productId: string, request: AddItemRequest): Promise<AddItemResult> {
+    async addItem(productId: string, quantity: number): Promise<AddItemResult> {
         return this.updateValue(async (value) => {
             if (value.orderStatus == OrderStatus.new) {
                 let item = value.items.find(item => item.productId === productId);
                 if (item) {
-                    item.quantity += request.quantity;
+                    item.quantity += quantity;
                     return Result.ok(true);
                 } else {
                     let product = await ProductAgent.get(productId).get();
@@ -290,7 +284,7 @@ export class OrderAgent extends BaseAgent {
                             productName: product.name,
                             productBrand: product.brand,
                             price: pricing.price,
-                            quantity: request.quantity
+                            quantity: quantity
                         });
                         value.total = getItemsTotalPrice(value.items);
                         value.updatedAt = now();
@@ -378,10 +372,10 @@ export class OrderAgent extends BaseAgent {
 
     @endpoint({ put: '/email' })
     @prompt("Update email in order")
-    async updateEmail(request: UpdateEmailRequest): Promise<UpdateEmailResult> {
+    async updateEmail(email: string): Promise<UpdateEmailResult> {
         return this.updateValue(async (value) => {
             if (value.orderStatus == OrderStatus.new) {
-                value.email = request.email;
+                value.email = email;
                 value.updatedAt = now();
                 return Result.ok(true);
             } else {

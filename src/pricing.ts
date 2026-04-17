@@ -17,12 +17,6 @@ export interface SalePricingItem extends PricingItem {
     end?: Datetime;
 }
 
-export interface PricingRequest {
-    msrpPrices: PricingItem[];
-    listPrices: PricingItem[];
-    salePrices: SalePricingItem[];
-}
-
 export interface Pricing {
     productId: string;
     msrpPrices: PricingItem[];
@@ -45,12 +39,12 @@ export const mergePricingItems = (first: PricingItem[], second: PricingItem[]): 
 
 export const mergeSalePricingItems = (first: SalePricingItem[], second: SalePricingItem[]): SalePricingItem[] => {
     const map = new Map<string, SalePricingItem>();
-    
+
     // Add items from first array
     for (const item of first) {
         map.set(`${item.currency}-${item.region}-${item.start?.toString()}-${item.end?.toString()}`, item);
     }
-    
+
     // Add or update items from second array
     for (const item of second) {
         map.set(`${item.currency}-${item.region}-${item.start?.toString()}-${item.end?.toString()}`, item);
@@ -71,27 +65,31 @@ export class PricingAgent extends BaseAgent {
         this.productId = id;
     }
 
-    @endpoint({ post: '/' })
+    @endpoint({post: '/'})
     @prompt("Initialize pricing")
-    async initializePricing(request: PricingRequest) {
+    async initializePricing(msrpPrices: PricingItem[],
+                            listPrices: PricingItem[],
+                            salePrices: SalePricingItem[]) {
         let date = now();
         this.value = {
             productId: this.productId,
-            msrpPrices: request.msrpPrices,
-            listPrices: request.listPrices,
-            salePrices: request.salePrices,
+            msrpPrices: msrpPrices,
+            listPrices: listPrices,
+            salePrices: salePrices,
             createdAt: date,
             updatedAt: date
         }
     }
 
-    @endpoint({ put: '/' })
+    @endpoint({put: '/'})
     @prompt("Update pricing")
-    async updatePricing(request: PricingRequest) {
+    async updatePricing(msrpPrices: PricingItem[],
+                        listPrices: PricingItem[],
+                        salePrices: SalePricingItem[]) {
         if (this.value) {
-            this.value.msrpPrices = mergePricingItems(this.value.msrpPrices, request.msrpPrices);
-            this.value.listPrices = mergePricingItems(this.value.listPrices, request.listPrices);
-            this.value.salePrices = mergeSalePricingItems(this.value.salePrices, request.salePrices);
+            this.value.msrpPrices = mergePricingItems(this.value.msrpPrices, msrpPrices);
+            this.value.listPrices = mergePricingItems(this.value.listPrices, listPrices);
+            this.value.salePrices = mergeSalePricingItems(this.value.salePrices, salePrices);
             this.value.updatedAt = now();
         }
     }
@@ -111,7 +109,7 @@ export class PricingAgent extends BaseAgent {
         }
     }
 
-    @endpoint({ get: '/' })
+    @endpoint({get: '/'})
     @prompt("Get pricing")
     async get(): Promise<Pricing | undefined> {
         return this.value;
