@@ -157,9 +157,12 @@ export interface Cart {
     updatedAt: Datetime
 }
 
-
+export interface CartUpdated {
+    userId: string;
+}
 
 export interface OrderConfirmation {
+    userId: string;
     orderId: string;
 }
 
@@ -171,11 +174,11 @@ function generateOrderId(): string {
     return uuidv4()
 }
 
-export type AddItemResult = Result<boolean, AddItemError>
-export type UpdateItemQuantityResult = Result<boolean, UpdateItemQuantityError>
-export type RemoveItemResult = Result<boolean, RemoveItemError>
-export type UpdateAddressResult = Result<boolean, UpdateAddressError>
-export type UpdateEmailResult = Result<boolean, UpdateEmailError>
+export type AddItemResult = Result<CartUpdated, AddItemError>
+export type UpdateItemQuantityResult = Result<CartUpdated, UpdateItemQuantityError>
+export type RemoveItemResult = Result<CartUpdated, RemoveItemError>
+export type UpdateAddressResult = Result<CartUpdated, UpdateAddressError>
+export type UpdateEmailResult = Result<CartUpdated, UpdateEmailError>
 export type CheckoutResult = Result<OrderConfirmation, CheckoutError>
 
 
@@ -214,7 +217,9 @@ export class CartAgent extends BaseAgent {
             let item = value.items.find(item => item.productId === productId);
             if (item) {
                 item.quantity += quantity;
-                return Result.ok(true);
+                value.total = getItemsTotalPrice(value.items);
+                value.updatedAt = now();
+                return Result.ok({userId: value.userId});
             } else {
                 let product = await ProductAgent.get(productId).get();
                 let pricing = await PricingAgent.get(productId).getPrice(value.currency, PRICING_REGION_DEFAULT);
@@ -239,7 +244,7 @@ export class CartAgent extends BaseAgent {
                     });
                     value.total = getItemsTotalPrice(value.items);
                     value.updatedAt = now();
-                    return Result.ok(true);
+                    return Result.ok({userId: value.userId});
                 }
             }
         });
@@ -253,7 +258,7 @@ export class CartAgent extends BaseAgent {
                 item.quantity = quantity;
                 value.total = getItemsTotalPrice(value.items);
                 value.updatedAt = now();
-                return Result.ok(true);
+                return Result.ok({userId: value.userId});
             } else {
                 return Result.err(UpdateItemQuantityError.itemNotFound({
                     message: `Item with productId ${productId} not found in cart`,
@@ -272,7 +277,7 @@ export class CartAgent extends BaseAgent {
                 value.items = newItems
                 value.total = getItemsTotalPrice(newItems);
                 value.updatedAt = now();
-                return Result.ok(true);
+                return Result.ok({userId: value.userId});
             } else {
                 return Result.err(RemoveItemError.itemNotFound({
                     message: `Item with productId ${productId} not found in cart`,
@@ -288,7 +293,7 @@ export class CartAgent extends BaseAgent {
         return this.updateValue(async (value) => {
             value.billingAddress = address;
             value.updatedAt = now();
-            return Result.ok(true);
+            return Result.ok({userId: value.userId});
         })
     }
 
@@ -298,7 +303,7 @@ export class CartAgent extends BaseAgent {
         return this.updateValue(async (value) => {
             value.shippingAddress = address;
             value.updatedAt = now();
-            return Result.ok(true);
+            return Result.ok({userId: value.userId});
         })
     }
 
@@ -308,7 +313,7 @@ export class CartAgent extends BaseAgent {
         return this.updateValue(async (value) => {
             value.email = email;
             value.updatedAt = now();
-            return Result.ok(true);
+            return Result.ok({userId: value.userId});
         })
     }
 
@@ -347,7 +352,7 @@ export class CartAgent extends BaseAgent {
 
             let result = await OrderAgent.get(orderId).create(order);
 
-            if (result.tag === 'err') {
+            if (result.isErr()) {
                 return Result.err(CheckoutError.orderCreate({
                     message: `Order creation failed`
                 }));
@@ -361,7 +366,7 @@ export class CartAgent extends BaseAgent {
 
                 ShoppingAssistantAgent.get(this.userId).recommendItems.trigger();
 
-                return Result.ok({orderId});
+                return Result.ok({userId: value.userId, orderId});
             }
         })
     }

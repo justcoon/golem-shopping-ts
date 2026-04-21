@@ -190,18 +190,23 @@ export interface CreateOrder {
     updatedAt: Datetime;
 }
 
+export interface OrderUpdated {
+    userId: string;
+    orderId: string;
+}
+
 export const getItemsTotalPrice = (items: OrderItem[]): number => {
     return items.reduce((total, item) => total + item.price * item.quantity, 0);
 }
 
-export type InitOrderResult = Result<boolean, InitOrderError>
-export type CancelOrderResult = Result<boolean, CancelOrderError>
-export type ShipOrderResult = Result<boolean, ShipOrderError>
-export type AddItemResult = Result<boolean, AddItemError>
-export type UpdateItemQuantityResult = Result<boolean, UpdateItemQuantityError>
-export type RemoveItemResult = Result<boolean, RemoveItemError>
-export type UpdateAddressResult = Result<boolean, UpdateAddressError>
-export type UpdateEmailResult = Result<boolean, UpdateEmailError>
+export type InitOrderResult = Result<OrderUpdated, InitOrderError>
+export type CancelOrderResult = Result<OrderUpdated, CancelOrderError>
+export type ShipOrderResult = Result<OrderUpdated, ShipOrderError>
+export type AddItemResult = Result<OrderUpdated, AddItemError>
+export type UpdateItemQuantityResult = Result<OrderUpdated, UpdateItemQuantityError>
+export type RemoveItemResult = Result<OrderUpdated, RemoveItemError>
+export type UpdateAddressResult = Result<OrderUpdated, UpdateAddressError>
+export type UpdateEmailResult = Result<OrderUpdated, UpdateEmailError>
 
 @agent({
     mount: '/v1/order/{id}'
@@ -248,7 +253,7 @@ export class OrderAgent extends BaseAgent {
                 value.currency = order.currency;
                 value.orderStatus = OrderStatus.new;
                 value.updatedAt = now();
-                return Result.ok(true);
+                return Result.ok({userId: value.userId, orderId: value.orderId});
             } else {
                 return Result.err(InitOrderError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
@@ -263,7 +268,9 @@ export class OrderAgent extends BaseAgent {
                 let item = value.items.find(item => item.productId === productId);
                 if (item) {
                     item.quantity += quantity;
-                    return Result.ok(true);
+                    value.total = getItemsTotalPrice(value.items);
+                    value.updatedAt = now();
+                    return Result.ok({userId: value.userId, orderId: value.orderId});
                 } else {
                     let product = await ProductAgent.get(productId).get();
                     let pricing = await PricingAgent.get(productId).getPrice(value.currency, PRICING_REGION_DEFAULT);
@@ -288,7 +295,7 @@ export class OrderAgent extends BaseAgent {
                         });
                         value.total = getItemsTotalPrice(value.items);
                         value.updatedAt = now();
-                        return Result.ok(true);
+                        return Result.ok({userId: value.userId, orderId: value.orderId});
                     }
                 }
             } else {
@@ -306,7 +313,7 @@ export class OrderAgent extends BaseAgent {
                     item.quantity = quantity;
                     value.total = getItemsTotalPrice(value.items);
                     value.updatedAt = now();
-                    return Result.ok(true);
+                    return Result.ok({userId: value.userId, orderId: value.orderId});
                 } else {
                     return Result.err(UpdateItemQuantityError.itemNotFound({
                         message: `Item with productId ${productId} not found in order`,
@@ -329,7 +336,7 @@ export class OrderAgent extends BaseAgent {
                     value.items = newItems
                     value.total = getItemsTotalPrice(newItems);
                     value.updatedAt = now();
-                    return Result.ok(true);
+                    return Result.ok({userId: value.userId, orderId: value.orderId});
                 } else {
                     return Result.err(RemoveItemError.itemNotFound({
                         message: `Item with productId ${productId} not found in order`,
@@ -349,7 +356,7 @@ export class OrderAgent extends BaseAgent {
             if (value.orderStatus == OrderStatus.new) {
                 value.billingAddress = address;
                 value.updatedAt = now();
-                return Result.ok(true);
+                return Result.ok({userId: value.userId, orderId: value.orderId});
             } else {
                 return Result.err(UpdateAddressError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
@@ -363,7 +370,7 @@ export class OrderAgent extends BaseAgent {
             if (value.orderStatus == OrderStatus.new) {
                 value.shippingAddress = address;
                 value.updatedAt = now();
-                return Result.ok(true);
+                return Result.ok({userId: value.userId, orderId: value.orderId});
             } else {
                 return Result.err(UpdateAddressError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
@@ -377,7 +384,7 @@ export class OrderAgent extends BaseAgent {
             if (value.orderStatus == OrderStatus.new) {
                 value.email = email;
                 value.updatedAt = now();
-                return Result.ok(true);
+                return Result.ok({userId: value.userId, orderId: value.orderId});
             } else {
                 return Result.err(UpdateEmailError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
@@ -391,7 +398,7 @@ export class OrderAgent extends BaseAgent {
             if (value.orderStatus == OrderStatus.new) {
                 value.orderStatus = OrderStatus.cancelled;
                 value.updatedAt = now();
-                return Result.ok(true);
+                return Result.ok({userId: value.userId, orderId: value.orderId});
             } else {
                 return Result.err(CancelOrderError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
@@ -405,7 +412,7 @@ export class OrderAgent extends BaseAgent {
             if (value.orderStatus == OrderStatus.new) {
                 value.orderStatus = OrderStatus.shipped;
                 value.updatedAt = now();
-                return Result.ok(true);
+                return Result.ok({userId: value.userId, orderId: value.orderId});
             } else {
                 return Result.err(ShipOrderError.actionNotAllowed(ActionNotAllowedError.create(value.orderStatus)));
             }
