@@ -125,9 +125,7 @@ async fn create_and_checkout_cart(user: &mut GooseUser) -> TransactionResult {
         )
         .await?;
 
-    // let order_created: domain::cart::OrderCreated = response.json().await?;
-    let ok_order_created: domain::cart::OkOrderCreated = response.json().await?;
-    let order_created: domain::cart::OrderCreated = ok_order_created.ok;
+    let order_created: domain::cart::OrderCreated = response.json().await?;
 
     let order_id = order_created.order_id;
 

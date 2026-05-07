@@ -351,10 +351,26 @@ export class OrderAgent extends BaseAgent {
 
     @endpoint({ put: '/billing-address' })
     @prompt("Update billing address in order")
-    async updateBillingAddress(address: Address): Promise<UpdateAddressResult> {
+    async updateBillingAddress(
+        street: string,
+        city: string,
+        stateOrRegion: string,
+        country: string,
+        postalCode: string,
+        name?: string,
+        phoneNumber?: string
+    ): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
             if (value.orderStatus == OrderStatus.new) {
-                value.billingAddress = address;
+                value.billingAddress = {
+                    street,
+                    city,
+                    stateOrRegion,
+                    country,
+                    postalCode,
+                    name,
+                    phoneNumber
+                };
                 value.updatedAt = now();
                 return Result.ok({userId: value.userId, orderId: value.orderId});
             } else {
@@ -365,10 +381,26 @@ export class OrderAgent extends BaseAgent {
 
     @endpoint({ put: '/shipping-address' })
     @prompt("Update shipping address in order")
-    async updateShippingAddress(address: Address): Promise<UpdateAddressResult> {
+    async updateShippingAddress(
+        street: string,
+        city: string,
+        stateOrRegion: string,
+        country: string,
+        postalCode: string,
+        name?: string,
+        phoneNumber?: string
+    ): Promise<UpdateAddressResult> {
         return this.updateValue(async (value) => {
             if (value.orderStatus == OrderStatus.new) {
-                value.shippingAddress = address;
+                value.shippingAddress = {
+                    street,
+                    city,
+                    stateOrRegion,
+                    country,
+                    postalCode,
+                    name,
+                    phoneNumber
+                };
                 value.updatedAt = now();
                 return Result.ok({userId: value.userId, orderId: value.orderId});
             } else {

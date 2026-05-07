@@ -55,7 +55,7 @@ const addToCart = async (product: Product) => {
 
   try {
     isAddingToCart.value = true;
-    await cartStore.addItem(currentUserId, product["product-id"], 1);
+    await cartStore.addItem(currentUserId, product.productId, 1);
     // Show success message or notification
   } catch (err) {
     console.error("Error adding to cart:", err);
@@ -89,7 +89,7 @@ const addToCart = async (product: Product) => {
         <div v-else class="product-grid">
           <ProductCard
             v-for="product in featuredProducts"
-            :key="product['product-id']"
+            :key="product.productId"
             :product="product"
             :is-adding-to-cart="isAddingToCart"
             @add-to-cart="addToCart"
@@ -108,7 +108,7 @@ const addToCart = async (product: Product) => {
         <div v-else class="product-grid">
           <ProductCard
               v-for="product in recommendedProducts"
-              :key="product['product-id']"
+              :key="product.productId"
               :product="product"
               :is-adding-to-cart="isAddingToCart"
               @add-to-cart="addToCart"

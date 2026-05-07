@@ -19,7 +19,7 @@ const AGENT_FILTER: AgentAnyFilter = {
                 tag: "name",
                 val: {
                     comparator: "starts-with",
-                    value: "product-agent("
+                    value: "ProductAgent("
                 }
             }
         ]
@@ -28,7 +28,7 @@ const AGENT_FILTER: AgentAnyFilter = {
 
 function getProductAgentId(agentName: string): string | undefined {
     // parseAgentId(agentName)
-    const match = agentName.match(/^product-agent\("([^"]+)"\)$/);
+    const match = agentName.match(/^ProductAgent\("([^"]+)"\)$/);
     return match ? match[1] : undefined;
 }
 

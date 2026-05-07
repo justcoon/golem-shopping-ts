@@ -10,7 +10,7 @@ import {
 import { dateTimeToDate } from "@/types/datetime.ts";
 
 export interface Product {
-  "product-id": string;
+  productId: string;
   name: string;
   brand: string;
   description: string;
@@ -24,7 +24,7 @@ const enhanceWithPricing = async (
   options?: PriceFilterOptions,
 ): Promise<Product> => {
   try {
-    const pricing = await getProductPricing(product["product-id"]);
+    const pricing = await getProductPricing(product.productId);
     return {
       ...product,
       pricing,
@@ -32,7 +32,7 @@ const enhanceWithPricing = async (
     };
   } catch (error) {
     console.error(
-      `Error enhancing product ${product["product-id"]} with pricing:`,
+      `Error enhancing product ${product.productId} with pricing:`,
       error,
     );
     return product; // Return product without pricing if there's an error
@@ -47,15 +47,15 @@ export const searchProducts = async (
     const response = await apiClient.get(
       `/v1/product/search?query=${encodeURIComponent(query)}`,
     );
-    const products: Product[] = response.ok;
+    const products: Product[] = response;
 
     // Get pricing for all products in batch
-    const productIds = products.map((p) => p["product-id"]);
+    const productIds = products.map((p) => p.productId);
     const pricingMap = await getBatchPricing(productIds);
 
     // Merge products with their pricing
     return products.map((product) => {
-      const pricing = pricingMap[product["product-id"]];
+      const pricing = pricingMap[product.productId];
       return {
         ...product,
         pricing,
@@ -75,7 +75,7 @@ export const getProductById = async (
 ): Promise<Product> => {
   try {
     const response = await apiClient.get(`/v1/product/${productId}`);
-    const product: Product = response.ok;
+    const product: Product = response;
 
     if (includePricing) {
       return enhanceWithPricing(product, options);
@@ -125,7 +125,7 @@ export const getProductsByIds = async (
     }
 
     // Get pricing only for successfully fetched products
-    const validProductIds = validProducts.map(p => p["product-id"]);
+    const validProductIds = validProducts.map(p => p.productId);
     const pricingMap = await getBatchPricing(validProductIds).catch(error => {
       console.warn('Failed to fetch batch pricing, continuing without pricing', error);
       return {}; // Return empty pricing map if batch pricing fails
@@ -134,8 +134,8 @@ export const getProductsByIds = async (
     // Merge products with their pricing
     const result: Record<string, Product> = {};
     validProducts.forEach((product) => {
-      const pricing = pricingMap[product["product-id"]];
-      result[product["product-id"]] = {
+      const pricing = pricingMap[product.productId];
+      result[product.productId] = {
         ...product,
         pricing,
         bestPrice: pricing ? getBestPrice(pricing, options) : undefined,
@@ -165,7 +165,7 @@ export const getProductOriginalPrice = (
   if (!product.pricing) return getProductBestPrice(product, options);
 
   // Filter list prices by currency and region if provided
-  let listPrices = [...product.pricing["list-prices"]];
+  let listPrices = [...product.pricing.listPrices];
   if (options?.currency) {
     listPrices = listPrices.filter((p) => p.currency === options.currency);
   }
@@ -185,11 +185,11 @@ export const isProductOnSale = (
   product: Product,
   options?: PriceFilterOptions,
 ): boolean => {
-  if (!product.pricing?.["sale-prices"]?.length) return false;
+  if (!product.pricing?.salePrices?.length) return false;
 
   // Filter sale prices by date, currency and region
   const now = new Date();
-  const salePrices = product.pricing["sale-prices"].filter(
+  const salePrices = product.pricing.salePrices.filter(
     (sale: SalePricingItem) => {
       const start = sale.start ? dateTimeToDate(sale.start) : null;
       const end = sale.end ? dateTimeToDate(sale.end) : null;
@@ -212,7 +212,7 @@ export const isProductOnSale = (
   const bestSalePrice = Math.min(...salePrices.map((s) => s.price));
 
   // Get filtered list prices for comparison
-  let listPrices = [...product.pricing["list-prices"]];
+  let listPrices = [...product.pricing.listPrices];
   if (options?.currency) {
     listPrices = listPrices.filter((p) => p.currency === options.currency);
   }

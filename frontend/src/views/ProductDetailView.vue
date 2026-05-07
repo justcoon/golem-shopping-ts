@@ -76,7 +76,7 @@ async function addToCart() {
     isAddingToCart.value = true;
     await cartStore.addItem(
       currentUserId,
-      product.value["product-id"],
+      product.value.productId,
       qty.value,
     );
   } catch (err) {
@@ -140,7 +140,7 @@ watch(() => route.params.id, fetchProduct);
             {{ product.brand }}
           </router-link>
           <span v-else class="brand">No Brand</span>
-          <span class="sku">SKU: {{ product["product-id"] }}</span>
+          <span class="sku">SKU: {{ product.productId }}</span>
         </div>
 
         <div class="price" :class="{ 'on-sale': hasDiscount }">
