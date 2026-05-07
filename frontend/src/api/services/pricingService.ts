@@ -13,11 +13,11 @@ export interface SalePricingItem extends PricingItem {
 }
 
 export interface Pricing {
-  "product-id": string;
-  "msrp-prices": PricingItem[];
-  "list-prices": PricingItem[];
-  "sale-prices": SalePricingItem[];
-  "updated-at": DateTime;
+  productId: string;
+  msrpPrices: PricingItem[];
+  listPrices: PricingItem[];
+  salePrices: SalePricingItem[];
+  updatedAt: DateTime;
 }
 
 export const getProductPricing = async (
@@ -25,7 +25,7 @@ export const getProductPricing = async (
 ): Promise<Pricing> => {
   try {
     const response = await apiClient.get(`/v1/pricing/${productId}`);
-    return response.ok;
+    return response;
   } catch (error) {
     console.error(`Error fetching pricing for product ${productId}:`, error);
     throw error;
@@ -82,7 +82,7 @@ export const getCurrentSalePrices = (
       ? { currency: options } // Backward compatibility for string currency
       : options || {};
 
-  return pricing["sale-prices"].filter((sale) => {
+  return pricing.salePrices.filter((sale) => {
     const start = sale.start ? dateTimeToDate(sale.start) : null;
     const end = sale.end ? dateTimeToDate(sale.end) : null;
     const matchesCurrency = filterOptions.currency
@@ -111,7 +111,7 @@ export const getBestPrice = (
       : options || {};
 
   const salePrices = getCurrentSalePrices(pricing, filterOptions);
-  const listPrices = pricing["list-prices"].filter((p) => {
+  const listPrices = pricing.listPrices.filter((p) => {
     const matchesCurrency = filterOptions.currency
       ? p.currency === filterOptions.currency
       : true;

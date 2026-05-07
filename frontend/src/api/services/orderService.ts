@@ -3,31 +3,31 @@ import type { Address } from "@/types/address";
 import { DateTime } from "@/types/datetime.ts";
 
 export interface OrderItem {
-  "product-id": string;
-  "product-name": string;
-  "product-brand": string;
+  productId: string;
+  productName: string;
+  productBrand: string;
   price: number;
   quantity: number;
 }
 
 export interface Order {
-  "order-id": string;
-  "user-id": string;
+  orderId: string;
+  userId: string;
   items: OrderItem[];
   email: string;
-  "billing-address"?: Address;
-  "shipping-address"?: Address;
-  "order-status": string;
+  billingAddress?: Address;
+  shippingAddress?: Address;
+  orderStatus: string;
   total: number;
   currency: string;
-  "created-at": DateTime;
-  "updated-at": DateTime;
+  createdAt: DateTime;
+  updatedAt: DateTime;
 }
 
 export const getOrder = async (orderId: string): Promise<Order> => {
   try {
     const response = await apiClient.get(`/v1/order/${orderId}`);
-    return response.ok;
+    return response;
   } catch (error) {
     console.error(`Error fetching order ${orderId}:`, error);
     throw error;
@@ -79,7 +79,7 @@ export const updateOrderBillingAddress = async (
 ): Promise<Order> => {
   try {
     const response = await apiClient.put(
-      `/v1/order/${orderId}/billing-address`,
+      `/v1/order/${orderId}/billingAddress`,
       address,
     );
     return response.data;
@@ -98,7 +98,7 @@ export const updateOrderShippingAddress = async (
 ): Promise<Order> => {
   try {
     const response = await apiClient.put(
-      `/v1/order/${orderId}/shipping-address`,
+      `/v1/order/${orderId}/shippingAddress`,
       address,
     );
     return response.data;

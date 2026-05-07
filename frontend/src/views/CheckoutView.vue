@@ -20,11 +20,11 @@ const shipping = ref<Address & { email: string }>({
   email: "",
   street: "",
   city: "",
-  "state-or-region": "",
+  stateOrRegion: "",
   country: "",
-  "postal-code": "",
+  postalCode: "",
   name: "",
-  "phone-number": "",
+  phoneNumber: "",
 });
 
 // Billing address (starts as a copy of shipping address)
@@ -58,12 +58,12 @@ onMounted(() => {
   if (!cart.value) cartStore.fetchCart(currentUserId);
 
   // If we have a saved cart with addresses, populate the form
-  if (cart.value?.["shipping-address"]) {
-    shipping.value = { ...cart.value["shipping-address"] };
+  if (cart.value?.shippingAddress) {
+    shipping.value = { ...cart.value.shippingAddress };
   }
 
-  if (cart.value?.["billing-address"]) {
-    billing.value = { ...cart.value["billing-address"] };
+  if (cart.value?.billingAddress) {
+    billing.value = { ...cart.value.billingAddress };
     sameAsBilling.value = false;
   }
 });
@@ -87,13 +87,13 @@ async function submitOrder() {
     const order = await cartStore.checkout(currentUserId);
 
     // Redirect to order confirmation
-    if (order && order["order-id"]) {
+    if (order && order.orderId) {
       // Clear cart
       await cartStore.clearCart();
 
       await router.push({
         name: "order-detail",
-        params: { id: order["order-id"] },
+        params: { id: order.orderId },
       });
     } else {
       // If for some reason we don't have the order, go to orders page
@@ -163,7 +163,7 @@ async function submitOrder() {
             <label for="shipping-region">State/Region</label>
             <input
               id="shipping-region"
-              v-model="shipping['state-or-region']"
+              v-model="shipping.stateOrRegion"
               placeholder="NY"
               required
             />
@@ -175,7 +175,7 @@ async function submitOrder() {
             <label for="shipping-postal-code">Postal Code</label>
             <input
               id="shipping-postal-code"
-              v-model="shipping['postal-code']"
+              v-model="shipping.postalCode"
               placeholder="10001"
               required
             />
@@ -195,7 +195,7 @@ async function submitOrder() {
           <label for="shipping-phone">Phone Number</label>
           <input
             id="shipping-phone"
-            v-model="shipping['phone-number']"
+            v-model="shipping.phoneNumber"
             placeholder="+1 (555) 123-4567"
           />
         </div>
@@ -240,7 +240,7 @@ async function submitOrder() {
               <label for="billing-region">State/Region</label>
               <input
                 id="billing-region"
-                v-model="billing['state-or-region']"
+                v-model="billing.stateOrRegion"
                 placeholder="NY"
               />
             </div>
@@ -251,7 +251,7 @@ async function submitOrder() {
               <label for="billing-postal-code">Postal Code</label>
               <input
                 id="billing-postal-code"
-                v-model="billing['postal-code']"
+                v-model="billing.postalCode"
                 placeholder="10001"
               />
             </div>
@@ -269,7 +269,7 @@ async function submitOrder() {
             <label for="billing-phone">Phone Number</label>
             <input
               id="billing-phone"
-              v-model="billing['phone-number']"
+              v-model="billing.phoneNumber"
               placeholder="+1 (555) 123-4567"
             />
           </div>
@@ -285,16 +285,16 @@ async function submitOrder() {
         <div class="order-items">
           <div
             v-for="item in cart.items"
-            :key="item['product-id']"
+            :key="item.productId"
             class="order-item"
           >
             <div class="item-details">
               <h6 class="item-name">
                 <router-link
-                  :to="`/products/${item['product-id']}`"
+                  :to="`/products/${item.productId}`"
                   class="product-link"
                 >
-                  {{ item["product-name"] }}
+                  {{ item.productName }}
                 </router-link>
               </h6>
               <div class="item-meta">
