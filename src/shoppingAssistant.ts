@@ -1,4 +1,4 @@
-import {agent, BaseAgent, endpoint, prompt} from "@golemcloud/golem-ts-sdk";
+import {agent, BaseAgent, endpoint, prompt, Config, Secret } from "@golemcloud/golem-ts-sdk";
 
 // import * as llm from 'golem:llm/llm@1.0.0';
 import {CartAgent} from "./cart";
@@ -68,7 +68,7 @@ async function getOrderItems(id: string): Promise<OrderItem[]> {
     return reduceOrderItems(result);
 }
 
-async function getLLMRecommendations(input: OrderItem[]): Promise<LLMRecommendations | undefined> {
+async function getLLMRecommendations(input: OrderItem[], config: AssistantAgentConfig): Promise<LLMRecommendations | undefined> {
     // let llmResponse: string | undefined = undefined;
     // try {
     //     const currentItemsString = JSON.stringify(input);
@@ -146,16 +146,25 @@ async function getLLMRecommendations(input: OrderItem[]): Promise<LLMRecommendat
     return undefined
 }
 
+type AssistantAgentConfig = {
+    llm: {
+        apiKey: Secret<string>;
+        model: string;
+    };
+};
+
 @agent({
     mount: '/v1/assistant/{id}'
 })
 export class ShoppingAssistantAgent extends BaseAgent {
     private readonly id: string;
     private recommendedItems: RecommendedItems;
+    private readonly config: Config<AssistantAgentConfig>;
 
-    constructor(id: string) {
+    constructor(id: string, config: Config<AssistantAgentConfig>) {
         super();
         this.id = id;
+        this.config = config;
         let date = now();
         this.recommendedItems = {
             productIds: [],
@@ -177,7 +186,7 @@ export class ShoppingAssistantAgent extends BaseAgent {
 
         const currentItems = await getOrderItems(this.id);
 
-        const llmRecommendations = await getLLMRecommendations(currentItems);
+        const llmRecommendations = await getLLMRecommendations(currentItems, this.config.value);
 
         if (llmRecommendations) {
             this.recommendedItems.productIds = llmRecommendations.productIds;
