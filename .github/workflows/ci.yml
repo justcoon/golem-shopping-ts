@@ -140,6 +140,8 @@ jobs:
           done
       - name: Deploy components
         run: golem deploy --reset --yes
+        env:
+          OPENROUTER_KEY: "key"
       - name: Smoke test deployment
         run: |
           echo "Testing basic deployment..."
