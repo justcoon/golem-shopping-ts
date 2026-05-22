@@ -69,80 +69,76 @@ async function getOrderItems(id: string): Promise<OrderItem[]> {
 }
 
 async function getLLMRecommendations(input: OrderItem[], config: AssistantAgentConfig): Promise<LLMRecommendations | undefined> {
-    // let llmResponse: string | undefined = undefined;
-    // try {
-    //     const currentItemsString = JSON.stringify(input);
-    //
-    //     let response = llm.send(
-    //         [
-    //             {
-    //                 tag: "message",
-    //                 val: {
-    //                     role: "system",
-    //                     content: [{
-    //                         tag: "text",
-    //                         val: `You MUST respond with JSON in the following schema:
-    //                             {
-    //                                 "type": "object",
-    //                                 "properties": {
-    //                                 "productBrands": {
-    //                                     "type": "array",
-    //                                         "items": {"type": "string"}
-    //                                 },
-    //                                 "productIds": {
-    //                                     "type": "array",
-    //                                         "items": {"type": "string"}
-    //                                 }
-    //                             },
-    //                                 "required": ["productBrands", "productIds"],
-    //                                 "additionalProperties": false
-    //                             }
-    //
-    //                             Return ONLY valid JSON, no other text.`
-    //                     }]
-    //                 }
-    //             },
-    //             {
-    //                 tag: "message",
-    //                 val: {
-    //                     role: "user",
-    //                     content: [{
-    //                         tag: "text",
-    //                         val: `We have a list of order items: ${currentItemsString}.
-    //                        Can you do ${RECOMMENDATION_PRODUCT_COUNT} recommendations for products items to buy based on previous order items.
-    //                        Can you do ${RECOMMENDATION_BRAND_COUNT} recommendations for product brands to buy based on previous order items.
-    //                        Return the list of productId-s and list of productBrand-s as a valid JSON object. Return JSON only.`
-    //                     }]
-    //                 }
-    //             }
-    //         ],
-    //         {
-    //             model: "tngtech/deepseek-r1t2-chimera:free",
-    //             providerOptions: [{
-    //                 key: "responseFormat",
-    //                 value: "json_object"
-    //             }]
-    //         }
-    //     );
-    //     const responseContent =
-    //         response.content.filter(c => c.tag === "text").map(c => c.val).join();
-    //
-    //     llmResponse = cleanMarkdownJsonString(responseContent.trim())
-    // } catch (err) {
-    //     const code: string = (err as any)?.code || 'N/A';
-    //     const message: string = (err as any)?.message || 'N/A';
-    //
-    //     console.warn(`LLM recommendations - failed to get result: ${code}, ${message}`)
-    // }
-    //
-    // if (llmResponse) {
-    //     try {
-    //         return JSON.parse(llmResponse);
-    //     } catch (err) {
-    //         console.warn(`LLM recommendations - failed to parse LLM's result: ${llmResponse}: ${err}`)
-    //     }
-    // }
-    //
+    let llmResponse: string | undefined = undefined;
+    try {
+        const currentItemsString = JSON.stringify(input);
+        const apiKey = config.llm.apiKey.get();
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${apiKey}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                model: config.llm.model,
+                messages: [
+                    {
+                        role: "system",
+                        content: `You MUST respond with JSON in the following schema:
+                            {
+                                "type": "object",
+                                "properties": {
+                                "productBrands": {
+                                    "type": "array",
+                                        "items": {"type": "string"}
+                                },
+                                "productIds": {
+                                    "type": "array",
+                                        "items": {"type": "string"}
+                                }
+                            },
+                                "required": ["productBrands", "productIds"],
+                                "additionalProperties": false
+                            }
+
+                            Return ONLY valid JSON, no other text.`
+                    },
+                    {
+                        role: "user",
+                        content: `We have a list of order items: ${currentItemsString}.
+                           Can you do ${RECOMMENDATION_PRODUCT_COUNT} recommendations for products items to buy based on previous order items.
+                           Can you do ${RECOMMENDATION_BRAND_COUNT} recommendations for product brands to buy based on previous order items.
+                           Return the list of productId-s and list of productBrand-s as a valid JSON object. Return JSON only.`
+                    }
+                ],
+                response_format: { type: "json_object" }
+            })
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.warn(`LLM recommendations - failed to get result: ${response.status} ${response.statusText}: ${errorText}`);
+            return undefined;
+        }
+
+        const data = await response.json() as { choices: Array<{ message: { content: string } }> };
+        llmResponse = cleanMarkdownJsonString(data.choices[0]?.message?.content?.trim() || "");
+    } catch (err) {
+        const code: string = (err as any)?.code || 'N/A';
+        const message: string = (err as any)?.message || 'N/A';
+
+        console.warn(`LLM recommendations - failed to get result: ${code}, ${message}`)
+    }
+
+    if (llmResponse) {
+        try {
+            return JSON.parse(llmResponse);
+        } catch (err) {
+            console.warn(`LLM recommendations - failed to parse LLM's result: ${llmResponse}: ${err}`)
+        }
+    }
+
     return undefined
 }
 
