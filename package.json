@@ -2,7 +2,6 @@
   "name": "app",
   "dependencies": {
     "@golemcloud/golem-ts-sdk": "1.1.1",
-    "@openrouter/sdk": "^0.12.35",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
