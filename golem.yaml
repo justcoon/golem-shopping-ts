@@ -31,6 +31,15 @@ components:
     #
     env:
 #      OPENROUTER_API_KEY:  '{{ OPENROUTER_KEY }}'
+secretDefaults:
+  local:
+    llm:
+      apiKey: '{{ OPENROUTER_KEY }}'
+agents:
+  ShoppingAssistantAgent:
+    config:
+      llm:
+        model: "deepseek/deepseek-v4-flash:free"
 httpApi:
   deployments:
     local:
