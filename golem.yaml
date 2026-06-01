@@ -35,11 +35,7 @@ secretDefaults:
   local:
     llm:
       apiKey: '{{ OPENROUTER_KEY }}'
-agents:
-  ShoppingAssistantAgent:
-    config:
-      llm:
-        model: "deepseek/deepseek-v4-flash:free"
+      model: "openrouter/owl-alpha"
 httpApi:
   deployments:
     local:
