@@ -78,6 +78,7 @@ async function getLLMRecommendations(input: OrderItem[], config: AssistantAgentC
         return await withRetryPolicy(llmRetryPolicy, async () => {
             const currentItemsString = JSON.stringify(input);
             const apiKey = config.llm.apiKey.get();
+            const model = config.llm.model.get();
 
             const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
@@ -86,7 +87,7 @@ async function getLLMRecommendations(input: OrderItem[], config: AssistantAgentC
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    model: config.llm.model,
+                    model: model,
                     messages: [
                         {
                             role: "system",
@@ -150,7 +151,7 @@ async function getLLMRecommendations(input: OrderItem[], config: AssistantAgentC
 type AssistantAgentConfig = {
     llm: {
         apiKey: Secret<string>;
-        model: string;
+        model: Secret<string>;
     };
 };
 
