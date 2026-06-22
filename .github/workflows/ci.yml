@@ -35,7 +35,7 @@ jobs:
       - name: Install protobuf
         if: env.GOLEM_VERSION == 'master'
         uses: arduino/setup-protoc@v3
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24.x"
       - uses: pnpm/action-setup@v2
